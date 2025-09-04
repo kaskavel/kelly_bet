@@ -543,6 +543,159 @@ class PortfolioManager:
         finally:
             conn.close()
     
+    async def get_alive_bets(self) -> List[Bet]:
+        """Get all alive bets for monitoring"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+            SELECT bet_id, symbol, asset_type, entry_price, entry_time, amount, shares,
+                   win_threshold, loss_threshold, win_price, loss_price, current_price,
+                   status, algorithm_used, probability_when_placed, exit_time, exit_price, realized_pnl
+            FROM bets
+            WHERE status = ?
+            ORDER BY entry_time ASC
+            ''', (BetStatus.ALIVE.value,))
+            
+            rows = cursor.fetchall()
+            alive_bets = []
+            
+            for row in rows:
+                # Map database columns to Bet object
+                bet = Bet(
+                    bet_id=row[0],
+                    symbol=row[1],
+                    asset_type=row[2],
+                    entry_price=float(row[3]),
+                    entry_time=datetime.fromisoformat(row[4]),
+                    amount=float(row[5]),
+                    shares=float(row[6]),
+                    win_threshold=float(row[7]),
+                    loss_threshold=float(row[8]),
+                    win_price=float(row[9]),
+                    loss_price=float(row[10]),
+                    current_price=float(row[11]) if row[11] else float(row[3]),  # Use entry price if no current price
+                    current_value=0.0,  # Will be calculated
+                    unrealized_pnl=0.0,  # Will be calculated
+                    status=BetStatus.ALIVE,
+                    algorithm_used=row[13] or 'unknown',
+                    probability_when_placed=float(row[14]) if row[14] else 0.0,
+                    exit_time=datetime.fromisoformat(row[15]) if row[15] else None,
+                    exit_price=float(row[16]) if row[16] else None,
+                    realized_pnl=float(row[17]) if row[17] else None
+                )
+                
+                # Add bet_type attribute (needed by monitoring logic)
+                bet.bet_type = 'long'  # Assuming long positions for now - can be enhanced later
+                
+                alive_bets.append(bet)
+            
+            self.logger.info(f"Retrieved {len(alive_bets)} alive bets for monitoring")
+            return alive_bets
+            
+        except Exception as e:
+            self.logger.error(f"Error retrieving alive bets: {e}")
+            return []
+        finally:
+            conn.close()
+    
+    async def close_bet(self, bet_id: str, current_price: float, close_reason: str):
+        """Close a bet when it hits win/loss thresholds"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            # First get the bet details
+            cursor.execute('''
+            SELECT symbol, amount, shares, entry_price, win_threshold, loss_threshold, status
+            FROM bets WHERE bet_id = ?
+            ''', (bet_id,))
+            
+            bet_row = cursor.fetchone()
+            if not bet_row:
+                raise Exception(f"Bet {bet_id} not found")
+            
+            symbol, amount, shares, entry_price, win_threshold, loss_threshold, current_status = bet_row
+            
+            if current_status != BetStatus.ALIVE.value:
+                self.logger.warning(f"Bet {bet_id} is already closed (status: {current_status})")
+                return
+            
+            # Determine if this is a win or loss
+            current_value = shares * current_price
+            realized_pnl = current_value - amount  # Simple P&L calculation
+            
+            # Determine new status based on thresholds
+            if current_price >= win_threshold:
+                new_status = BetStatus.WON
+            elif current_price <= loss_threshold:
+                new_status = BetStatus.LOST
+            else:
+                # This shouldn't happen in normal monitoring, but handle it
+                new_status = BetStatus.WON if realized_pnl > 0 else BetStatus.LOST
+            
+            # Apply trading fees for exit
+            exit_fee = amount * (self.trading_fee_percentage / 100)
+            realized_pnl -= exit_fee  # Subtract exit fee from P&L
+            
+            # Update the bet in database
+            cursor.execute('''
+            UPDATE bets SET
+                current_price = ?,
+                status = ?,
+                exit_time = ?,
+                exit_price = ?,
+                realized_pnl = ?,
+                pnl = ?,
+                exit_fee = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE bet_id = ?
+            ''', (
+                current_price,
+                new_status.value,
+                datetime.now().isoformat(),
+                current_price,
+                realized_pnl,
+                realized_pnl,  # Also store in pnl column for compatibility
+                exit_fee,
+                bet_id
+            ))
+            
+            # Update cash balance - add back the current value minus fees
+            net_return = current_value - exit_fee
+            new_cash_balance = self.cash_balance + net_return
+            
+            # Record cash transaction
+            cursor.execute('''
+            INSERT INTO cash_transactions (amount, balance_after, description, bet_id, transaction_type)
+            VALUES (?, ?, ?, ?, ?)
+            ''', (
+                net_return,
+                new_cash_balance,
+                f"Bet closed: {symbol} - {close_reason}",
+                bet_id,
+                'bet_close'
+            ))
+            
+            conn.commit()
+            
+            # Update internal cash balance
+            self.cash_balance = new_cash_balance
+            
+            self.logger.info(f"Bet {bet_id} closed successfully - {new_status.value.upper()}: "
+                           f"${realized_pnl:+.2f} P&L (after ${exit_fee:.2f} exit fee)")
+            
+            # Record portfolio snapshot after closing bet
+            await self._record_portfolio_snapshot(f"Bet closed: {symbol} - {close_reason}")
+            
+        except Exception as e:
+            self.logger.error(f"Error closing bet {bet_id}: {e}")
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
+    
     async def cleanup(self):
         """Clean up portfolio manager"""
         # Record final portfolio snapshot

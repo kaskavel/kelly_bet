@@ -18,7 +18,7 @@ import yaml
 
 @dataclass
 class LiveBetDisplay:
-    bet_id: int
+    bet_id: str
     symbol: str
     bet_type: str
     amount: float
@@ -47,20 +47,33 @@ class BetMonitor:
         self.market_data = MarketDataManager(self.config)
         
     async def show_live_bets(self, refresh_interval: int = 0):
-        """Display live bets with optional auto-refresh"""
+        """Display live bets with optional auto-refresh and automatic settlement"""
         await self.market_data.initialize()
         
-        if refresh_interval > 0:
-            self.logger.info(f"Starting live bet monitor with {refresh_interval}s refresh")
-            try:
-                while True:
-                    await self._display_live_bets()
-                    print(f"\n--- Refreshing in {refresh_interval} seconds (Ctrl+C to stop) ---")
+        # Default to 5-minute monitoring if no interval specified
+        if refresh_interval == 0:
+            refresh_interval = 300  # 5 minutes
+            
+        print(f"Starting live bet monitor with {refresh_interval//60}-minute refresh and auto-settlement")
+        print("Press Ctrl+C to stop monitoring\n")
+        
+        try:
+            while True:
+                # FIRST: Check and settle any positions that hit thresholds
+                await self._monitor_and_settle_positions()
+                
+                # THEN: Display current live bets
+                await self._display_live_bets()
+                
+                if refresh_interval > 0:
+                    print(f"\n--- Next check in {refresh_interval//60} minutes ({refresh_interval} seconds) - Ctrl+C to stop ---")
                     await asyncio.sleep(refresh_interval)
-            except KeyboardInterrupt:
-                print("\nLive monitoring stopped.")
-        else:
-            await self._display_live_bets()
+                else:
+                    break
+                    
+        except KeyboardInterrupt:
+            print("\nLive monitoring stopped.")
+            await self._cleanup()
     
     async def _display_live_bets(self):
         """Display current live bets"""
@@ -176,15 +189,15 @@ class BetMonitor:
             SELECT 
                 b.bet_id,
                 b.symbol,
-                b.bet_type,
+                'long' as bet_type,
                 b.amount,
-                b.probability,
+                b.probability_when_placed as probability,
                 b.entry_price,
-                b.win_threshold,
-                b.loss_threshold,
+                b.win_price as win_threshold,
+                b.loss_price as loss_threshold,
                 b.status,
                 b.created_at,
-                b.entry_fee,
+                0.0 as entry_fee,
                 JULIANDAY('now') - JULIANDAY(b.created_at) as days_active
             FROM bets b
             WHERE b.status = 'alive'
@@ -207,11 +220,11 @@ class BetMonitor:
                     potential_loss = (row['loss_threshold'] - row['entry_price']) / row['entry_price'] * row['amount']
                 
                 bet_display = LiveBetDisplay(
-                    bet_id=int(row['bet_id']),
+                    bet_id=row['bet_id'][:8],  # Show first 8 chars of UUID
                     symbol=row['symbol'],
                     bet_type=row['bet_type'],
                     amount=float(row['amount']),
-                    probability=float(row['probability']),
+                    probability=float(row['probability']) if row['probability'] else 0.0,
                     current_price=float(row['entry_price']),  # Will be updated with real price
                     entry_price=float(row['entry_price']),
                     win_threshold=float(row['win_threshold']),
@@ -253,3 +266,122 @@ class BetMonitor:
             self.logger.error(f"Error fetching current prices: {e}")
         
         return current_prices
+    
+    async def _monitor_and_settle_positions(self):
+        """Monitor existing alive bets and close positions that hit win/loss thresholds"""
+        try:
+            # Get all alive bets using the same query as display
+            alive_bets = await self._get_live_bets()
+            
+            if not alive_bets:
+                return
+            
+            self.logger.info(f"Monitoring {len(alive_bets)} positions for threshold triggers...")
+            
+            # Get current prices for all symbols
+            symbols_to_check = list(set(bet.symbol for bet in alive_bets))
+            current_prices = await self._get_current_prices(symbols_to_check)
+            
+            # Track settlements for reporting
+            settlements = []
+            
+            # Check each bet against thresholds
+            for bet in alive_bets:
+                if bet.symbol not in current_prices:
+                    self.logger.warning(f"Skipping {bet.symbol} - no current price available")
+                    continue
+                
+                current_price = current_prices[bet.symbol]
+                
+                # Calculate current return
+                current_return_pct = ((current_price - bet.entry_price) / bet.entry_price) * 100
+                
+                # Check thresholds (assuming long positions)
+                hit_win_threshold = current_price >= bet.win_threshold
+                hit_loss_threshold = current_price <= bet.loss_threshold
+                
+                self.logger.debug(f"Checking {bet.symbol}: Entry=${bet.entry_price:.2f}, "
+                                f"Current=${current_price:.2f}, Return={current_return_pct:+.2f}%")
+                
+                # Determine if we need to close the position
+                should_close = False
+                close_reason = ""
+                
+                if hit_win_threshold:
+                    should_close = True
+                    close_reason = f"WIN THRESHOLD HIT: {current_return_pct:+.2f}% (target: {((bet.win_threshold/bet.entry_price - 1) * 100):+.1f}%)"
+                elif hit_loss_threshold:
+                    should_close = True
+                    close_reason = f"LOSS THRESHOLD HIT: {current_return_pct:+.2f}% (stop: {((bet.loss_threshold/bet.entry_price - 1) * 100):+.1f}%)"
+                
+                if should_close:
+                    self.logger.info(f"SETTLING POSITION - {bet.symbol}: {close_reason}")
+                    
+                    try:
+                        # We need to close the bet through the portfolio manager
+                        # Import and initialize it temporarily
+                        from ..portfolio.manager import PortfolioManager
+                        portfolio = PortfolioManager(self.config)
+                        await portfolio.initialize()
+                        
+                        # Get the full bet_id from the database (we only have first 8 chars in display)
+                        full_bet_id = await self._get_full_bet_id(bet.bet_id)
+                        if full_bet_id:
+                            await portfolio.close_bet(full_bet_id, current_price, close_reason)
+                            
+                            settlement_info = {
+                                'symbol': bet.symbol,
+                                'reason': close_reason,
+                                'entry_price': bet.entry_price,
+                                'exit_price': current_price,
+                                'amount': bet.amount,
+                                'return_pct': current_return_pct
+                            }
+                            settlements.append(settlement_info)
+                        else:
+                            self.logger.error(f"Could not find full bet ID for {bet.bet_id}")
+                        
+                        await portfolio.cleanup()
+                        
+                    except Exception as e:
+                        self.logger.error(f"Error settling position {bet.symbol}: {e}")
+            
+            # Report any settlements
+            if settlements:
+                print(f"\n{'='*80}")
+                print(f"POSITIONS SETTLED ({len(settlements)})")
+                print(f"{'='*80}")
+                
+                for settlement in settlements:
+                    print(f"CLOSED: {settlement['symbol']}")
+                    print(f"  Reason: {settlement['reason']}")
+                    print(f"  Entry: ${settlement['entry_price']:.2f} -> Exit: ${settlement['exit_price']:.2f}")
+                    print(f"  Amount: ${settlement['amount']:.2f} | Return: {settlement['return_pct']:+.2f}%")
+                    
+                print(f"{'='*80}")
+            else:
+                self.logger.debug("No positions required settlement at this time")
+                
+        except Exception as e:
+            self.logger.error(f"Error in position monitoring: {e}")
+    
+    async def _get_full_bet_id(self, short_bet_id: str) -> str:
+        """Get the full bet ID from the short display ID"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT bet_id FROM bets WHERE bet_id LIKE ? AND status = ?', 
+                         (f'{short_bet_id}%', 'alive'))
+            result = cursor.fetchone()
+            return result[0] if result else None
+        except Exception as e:
+            self.logger.error(f"Error getting full bet ID: {e}")
+            return None
+        finally:
+            conn.close()
+    
+    async def _cleanup(self):
+        """Cleanup resources"""
+        if hasattr(self, 'market_data'):
+            await self.market_data.cleanup()
+        self.logger.info("Bet monitor cleanup complete")
