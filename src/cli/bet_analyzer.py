@@ -15,7 +15,7 @@ import yaml
 
 @dataclass
 class BetSummary:
-    bet_id: int
+    bet_id: str
     symbol: str
     bet_type: str
     amount: float
@@ -479,22 +479,22 @@ class BetAnalyzer:
             SELECT 
                 b.bet_id,
                 b.symbol,
-                b.bet_type,
+                'long' as bet_type,
                 b.amount,
-                b.probability,
+                b.probability_when_placed as probability,
                 b.entry_price,
                 b.exit_price,
                 b.win_threshold,
                 b.loss_threshold,
                 b.status,
-                b.pnl,
-                b.entry_fee,
-                b.exit_fee,
+                b.realized_pnl as pnl,
+                0.0 as entry_fee,
+                0.0 as exit_fee,
                 b.created_at,
-                b.closed_at,
+                b.exit_time as closed_at,
                 CASE 
-                    WHEN b.closed_at IS NOT NULL AND b.created_at IS NOT NULL 
-                    THEN JULIANDAY(b.closed_at) - JULIANDAY(b.created_at)
+                    WHEN b.exit_time IS NOT NULL AND b.created_at IS NOT NULL 
+                    THEN JULIANDAY(b.exit_time) - JULIANDAY(b.created_at)
                     WHEN b.status = 'alive' AND b.created_at IS NOT NULL
                     THEN JULIANDAY('now') - JULIANDAY(b.created_at)
                     ELSE 0 
@@ -525,17 +525,17 @@ class BetAnalyzer:
                 total_fees = (row['entry_fee'] or 0) + (row['exit_fee'] or 0)
                 
                 bet_summary = BetSummary(
-                    bet_id=int(row['bet_id']),
+                    bet_id=row['bet_id'][:8],  # Show first 8 chars of UUID for display
                     symbol=row['symbol'],
                     bet_type=row['bet_type'],
                     amount=float(row['amount']),
-                    probability=float(row['probability']),
+                    probability=float(row['probability']) if row['probability'] else 0.0,
                     entry_price=float(row['entry_price']),
                     exit_price=float(row['exit_price']) if row['exit_price'] else 0.0,
                     win_threshold=float(row['win_threshold']),
                     loss_threshold=float(row['loss_threshold']),
                     status=row['status'],
-                    pnl=float(row['pnl']) if row['pnl'] else 0.0,
+                    pnl=float(row['pnl']) if row['pnl'] is not None else 0.0,
                     return_pct=return_pct,
                     duration_days=int(row['duration_days']),
                     entry_fee=float(row['entry_fee']) if row['entry_fee'] else 0.0,

@@ -27,7 +27,7 @@ def parse_args():
     action_group.add_argument(
         '--livebets',
         action='store_true',
-        help='Show current active bets'
+        help='Monitor active bets with auto-settlement (continuous monitoring with 5-min intervals)'
     )
     action_group.add_argument(
         '--bets',
@@ -47,8 +47,8 @@ def parse_args():
     parser.add_argument(
         '--refresh', 
         type=int, 
-        default=0,
-        help='Auto-refresh interval in seconds for --livebets (0 = no refresh)'
+        default=300,
+        help='Monitor interval in seconds for --livebets (default: 300 = 5 minutes, 0 = single check)'
     )
     
     # Bet history options

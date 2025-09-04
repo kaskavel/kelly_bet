@@ -62,6 +62,9 @@ class TradingSystem:
                     await asyncio.sleep(300)  # Wait 5 minutes before checking again
                     continue
                 
+                # CRITICAL: Monitor existing bets first - check and close positions that hit thresholds
+                await self._monitor_existing_bets()
+                
                 # Get asset predictions and rankings
                 predictions = await self._get_predictions()
                 
@@ -195,16 +198,66 @@ class TradingSystem:
             available_capital=await self.portfolio.get_available_capital()
         )
         
-        print(f"\nBET DETAILS:")
+        print(f"\n" + "="*80)
+        print(f"KELLY CRITERION BET ANALYSIS - {symbol}")
+        print(f"="*80)
+        
+        # Basic bet information
         print(f"Asset: {symbol}")
         print(f"Current Price: ${current_price:.2f}")
-        print(f"Win Probability: {probability:.2f}%")
-        print(f"Recommended Bet Size: ${bet_recommendation.recommended_amount:.2f}")
-        print(f"Kelly Fraction: {bet_recommendation.fraction_of_capital:.1%}")
-        print(f"Expected Value: {bet_recommendation.expected_value:.3f}")
-        print(f"Confidence: {bet_recommendation.confidence_level}")
+        print(f"Available Capital: ${bet_recommendation.available_capital:,.2f}")
+        
+        # Probability analysis
+        print(f"\nPROBABILITY ANALYSIS:")
+        print(f"  Win Probability (p): {bet_recommendation.win_probability:.1%} ({probability:.2f}%)")
+        print(f"  Loss Probability (q): {bet_recommendation.loss_probability:.1%}")
+        
+        # Threshold information
+        win_threshold_pct = ((prediction.get('win_threshold', current_price) - current_price) / current_price) * 100
+        loss_threshold_pct = ((prediction.get('loss_threshold', current_price) - current_price) / current_price) * 100
+        print(f"\nTHRESHOLD SETUP:")
+        print(f"  Win Target: +{win_threshold_pct:.1f}% (${prediction.get('win_threshold', current_price):.2f})")
+        print(f"  Loss Stop: {loss_threshold_pct:.1f}% (${prediction.get('loss_threshold', current_price):.2f})")
+        
+        # Kelly formula breakdown
+        print(f"\nKELLY FORMULA CALCULATION:")
+        print(f"  Formula: f = (bp - q) / b")
+        print(f"  where:")
+        print(f"    b (odds ratio) = {bet_recommendation.kelly_formula_b:.3f} (win/loss ratio)")
+        print(f"    p (win probability) = {bet_recommendation.kelly_formula_p:.3f}")
+        print(f"    q (loss probability) = {bet_recommendation.kelly_formula_q:.3f}")
+        print(f"  ")
+        print(f"  Calculation: f = ({bet_recommendation.kelly_formula_b:.3f} × {bet_recommendation.kelly_formula_p:.3f} - {bet_recommendation.kelly_formula_q:.3f}) / {bet_recommendation.kelly_formula_b:.3f}")
+        print(f"  Raw Kelly Fraction = {bet_recommendation.kelly_fraction_raw:.1%}")
+        
+        # Expected value breakdown
+        print(f"\nEXPECTED VALUE ANALYSIS:")
+        print(f"  Expected Win: {bet_recommendation.win_probability:.1%} × {bet_recommendation.win_amount_ratio:.1%} = {bet_recommendation.expected_win:.3f}")
+        print(f"  Expected Loss: {bet_recommendation.loss_probability:.1%} × {bet_recommendation.loss_amount_ratio:.1%} = {bet_recommendation.expected_loss:.3f}")
+        print(f"  Net Expected Value: {bet_recommendation.expected_win:.3f} - {bet_recommendation.expected_loss:.3f} = {bet_recommendation.expected_value:.3f}")
+        
+        # Risk adjustments
+        print(f"\nRISK ADJUSTMENTS:")
+        if bet_recommendation.kelly_fraction_raw != bet_recommendation.fraction_of_capital:
+            kelly_multiplier = self.config.get('trading', {}).get('kelly_fraction', 0.25)
+            print(f"  Conservative Multiplier: {kelly_multiplier:.1%} (reduces risk)")
+            print(f"  Max Position Size Cap: {self.config.get('trading', {}).get('max_bet_fraction', 0.1):.1%}")
+            print(f"  After Adjustments: {bet_recommendation.fraction_of_capital:.1%}")
+        else:
+            print(f"  No adjustments applied")
+        
+        # Final recommendation
+        print(f"\nFINAL RECOMMENDATION:")
+        print(f"  Bet Amount: ${bet_recommendation.recommended_amount:,.2f}")
+        print(f"  Position Size: {bet_recommendation.fraction_of_capital:.1%} of capital")
+        print(f"  Confidence Level: {bet_recommendation.confidence_level}")
+        
         if bet_recommendation.risk_warning:
-            print(f"⚠️  Warning: {bet_recommendation.risk_warning}")
+            print(f"\nWARNINGS:")
+            for warning in bet_recommendation.risk_warning.split(';'):
+                print(f"  WARNING: {warning.strip()}")
+        
+        print(f"\n" + "="*80)
         
         confirm = input("Proceed with this bet? (y/N): ").strip().lower()
         
@@ -212,7 +265,7 @@ class TradingSystem:
             if bet_recommendation.is_favorable and bet_recommendation.recommended_amount > 0:
                 await self._place_bet(prediction)
             else:
-                print("❌ Bet not favorable - Kelly recommends no bet")
+                print("Bet not favorable - Kelly recommends no bet")
         else:
             print("Bet cancelled")
     
@@ -221,11 +274,100 @@ class TradingSystem:
         try:
             bet_id = await self.portfolio.place_bet(prediction)
             self.logger.info(f"Bet placed successfully: {bet_id}")
-            print(f"✓ Bet placed: {prediction['symbol']} (ID: {bet_id})")
+            print(f"Bet placed: {prediction['symbol']} (ID: {bet_id})")
             
         except Exception as e:
             self.logger.error(f"Failed to place bet: {e}")
-            print(f"✗ Failed to place bet: {e}")
+            print(f"Failed to place bet: {e}")
+    
+    async def _monitor_existing_bets(self):
+        """Monitor existing alive bets and close positions that hit win/loss thresholds"""
+        try:
+            self.logger.info("Checking existing bets for threshold triggers...")
+            
+            # Get all alive bets
+            alive_bets = await self.portfolio.get_alive_bets()
+            
+            if not alive_bets:
+                self.logger.debug("No alive bets to monitor")
+                return
+                
+            self.logger.info(f"Monitoring {len(alive_bets)} active positions")
+            
+            # Get current prices for all symbols with alive bets
+            symbols_to_check = list(set(bet.symbol for bet in alive_bets))
+            current_prices = {}
+            
+            for symbol in symbols_to_check:
+                try:
+                    recent_data = await self.market_data.get_stock_data(symbol, days=1)
+                    if not recent_data.empty:
+                        current_prices[symbol] = float(recent_data['Close'].iloc[-1])
+                        self.logger.debug(f"Current price for {symbol}: ${current_prices[symbol]:.2f}")
+                    else:
+                        self.logger.warning(f"No recent data available for {symbol}")
+                except Exception as e:
+                    self.logger.error(f"Error fetching current price for {symbol}: {e}")
+            
+            # Check each bet against thresholds
+            bets_closed = 0
+            for bet in alive_bets:
+                if bet.symbol not in current_prices:
+                    self.logger.warning(f"Skipping {bet.symbol} - no current price available")
+                    continue
+                
+                current_price = current_prices[bet.symbol]
+                
+                # Calculate current return
+                if bet.bet_type == 'long':
+                    current_return_pct = ((current_price - bet.entry_price) / bet.entry_price) * 100
+                    hit_win_threshold = current_price >= bet.win_threshold
+                    hit_loss_threshold = current_price <= bet.loss_threshold
+                else:  # short
+                    current_return_pct = ((bet.entry_price - current_price) / bet.entry_price) * 100
+                    hit_win_threshold = current_price <= bet.win_threshold
+                    hit_loss_threshold = current_price >= bet.loss_threshold
+                
+                self.logger.debug(f"Bet {bet.bet_id} ({bet.symbol}): Entry=${bet.entry_price:.2f}, "
+                                f"Current=${current_price:.2f}, Return={current_return_pct:+.2f}%")
+                
+                # Check if we need to close the position
+                should_close = False
+                close_reason = ""
+                
+                if hit_win_threshold:
+                    should_close = True
+                    close_reason = f"WIN THRESHOLD HIT: {current_return_pct:+.2f}% (target: {((bet.win_threshold/bet.entry_price - 1) * 100):+.2f}%)"
+                elif hit_loss_threshold:
+                    should_close = True
+                    close_reason = f"LOSS THRESHOLD HIT: {current_return_pct:+.2f}% (stop: {((bet.loss_threshold/bet.entry_price - 1) * 100):+.2f}%)"
+                
+                if should_close:
+                    self.logger.info(f"CLOSING POSITION - {bet.symbol}: {close_reason}")
+                    
+                    try:
+                        # Close the bet
+                        await self.portfolio.close_bet(bet.bet_id, current_price, close_reason)
+                        bets_closed += 1
+                        
+                        # Print notification if in manual mode (user is watching)
+                        if self.mode == 'manual':
+                            print(f"\n*** POSITION CLOSED ***")
+                            print(f"Symbol: {bet.symbol}")
+                            print(f"Reason: {close_reason}")
+                            print(f"Entry: ${bet.entry_price:.2f} -> Exit: ${current_price:.2f}")
+                            print(f"Amount: ${bet.amount:.2f}")
+                        
+                    except Exception as e:
+                        self.logger.error(f"Error closing bet {bet.bet_id}: {e}")
+            
+            if bets_closed > 0:
+                self.logger.info(f"Successfully closed {bets_closed} position(s)")
+            else:
+                self.logger.debug("No positions required closing at this time")
+                
+        except Exception as e:
+            self.logger.error(f"Error in bet monitoring: {e}")
     
     async def _cleanup(self):
         """Clean up resources"""

@@ -2057,3 +2057,815 @@ TypeError: unsupported format string passed to BetRecommendation.__format__
 2025-09-04 14:38:23,810 - src.kelly.calculator - INFO - Kelly recommendation: $1000.00 (10.0% of capital), EV=0.033
 2025-09-04 14:38:23,835 - src.portfolio.manager - INFO - Bet placed: 9a011663-5395-4e9a-a7b0-a14752969aa5 - CRM $1000.00 ($995.00 after $5.00 fee) (3.88 shares at $256.41)
 2025-09-04 14:38:23,835 - src.core.trading_system - INFO - Bet placed successfully: 9a011663-5395-4e9a-a7b0-a14752969aa5
+2025-09-04 15:08:23,837 - src.core.trading_system - INFO - Fetching market data and generating predictions...
+2025-09-04 15:08:23,837 - src.utils.asset_selector - INFO - Selected 141 assets (91 stocks, 50 crypto)
+2025-09-04 15:08:23,837 - src.data.market_data - INFO - Fetching data for 141 assets
+2025-09-04 15:08:23,852 - src.data.market_data - INFO - Extending history for AAPL - fetching 7 days
+2025-09-04 15:08:23,852 - src.data.market_data - INFO - Extending history for MSFT - fetching 7 days
+2025-09-04 15:08:23,871 - src.data.market_data - INFO - Extending history for AMZN - fetching 7 days
+2025-09-04 15:08:23,885 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-04 15:08:23,899 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-04 15:08:23,907 - src.data.market_data - INFO - Extending history for TSLA - fetching 7 days
+2025-09-04 15:08:23,927 - src.data.market_data - INFO - Extending history for GOOG - fetching 7 days
+2025-09-04 15:08:23,931 - src.data.market_data - INFO - Extending history for BRK-B - fetching 7 days
+2025-09-04 15:08:23,931 - src.data.market_data - INFO - Extending history for META - fetching 7 days
+2025-09-04 15:08:23,931 - src.data.market_data - INFO - Extending history for UNH - fetching 7 days
+2025-09-04 15:08:24,264 - src.data.market_data - INFO - Fetched 28 records for GOOGL from API
+2025-09-04 15:08:24,516 - src.data.market_data - INFO - Fetched 28 records for MSFT from API
+2025-09-04 15:08:24,548 - src.data.market_data - INFO - Fetched 28 records for AMZN from API
+2025-09-04 15:08:24,564 - src.data.market_data - INFO - Fetched 28 records for NVDA from API
+2025-09-04 15:08:24,596 - src.data.market_data - INFO - Fetched 28 records for META from API
+2025-09-04 15:08:24,627 - src.data.market_data - INFO - Fetched 28 records for UNH from API
+2025-09-04 15:08:24,658 - src.data.market_data - INFO - Fetched 28 records for BRK-B from API
+2025-09-04 15:08:24,691 - src.data.market_data - INFO - Fetched 28 records for AAPL from API
+2025-09-04 15:08:24,708 - src.data.market_data - INFO - Fetched 28 records for GOOG from API
+2025-09-04 15:08:24,738 - src.data.market_data - INFO - Fetched 28 records for TSLA from API
+2025-09-04 15:08:25,763 - src.data.market_data - INFO - Extending history for XOM - fetching 7 days
+2025-09-04 15:08:25,772 - src.data.market_data - INFO - Extending history for LLY - fetching 7 days
+2025-09-04 15:08:25,788 - src.data.market_data - INFO - Extending history for JPM - fetching 7 days
+2025-09-04 15:08:25,789 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-04 15:08:25,804 - src.data.market_data - INFO - Extending history for V - fetching 7 days
+2025-09-04 15:08:25,811 - src.data.market_data - INFO - Extending history for PG - fetching 7 days
+2025-09-04 15:08:25,835 - src.data.market_data - INFO - Extending history for MA - fetching 7 days
+2025-09-04 15:08:25,835 - src.data.market_data - INFO - Extending history for HD - fetching 7 days
+2025-09-04 15:08:25,851 - src.data.market_data - INFO - Extending history for CVX - fetching 7 days
+2025-09-04 15:08:25,851 - src.data.market_data - INFO - Extending history for MRK - fetching 7 days
+2025-09-04 15:08:25,911 - src.data.market_data - INFO - Fetched 28 records for XOM from API
+2025-09-04 15:08:26,183 - src.data.market_data - INFO - Fetched 28 records for LLY from API
+2025-09-04 15:08:26,215 - src.data.market_data - INFO - Fetched 28 records for V from API
+2025-09-04 15:08:26,231 - src.data.market_data - INFO - Fetched 28 records for JNJ from API
+2025-09-04 15:08:26,262 - src.data.market_data - INFO - Fetched 28 records for PG from API
+2025-09-04 15:08:26,277 - src.data.market_data - INFO - Fetched 28 records for JPM from API
+2025-09-04 15:08:26,294 - src.data.market_data - INFO - Fetched 28 records for CVX from API
+2025-09-04 15:08:26,312 - src.data.market_data - INFO - Fetched 28 records for MRK from API
+2025-09-04 15:08:26,357 - src.data.market_data - INFO - Fetched 28 records for MA from API
+2025-09-04 15:08:26,388 - src.data.market_data - INFO - Fetched 28 records for HD from API
+2025-09-04 15:08:27,413 - src.data.market_data - INFO - Extending history for ABBV - fetching 7 days
+2025-09-04 15:08:27,428 - src.data.market_data - INFO - Extending history for PEP - fetching 7 days
+2025-09-04 15:08:27,428 - src.data.market_data - INFO - Extending history for KO - fetching 7 days
+2025-09-04 15:08:27,444 - src.data.market_data - INFO - Extending history for AVGO - fetching 7 days
+2025-09-04 15:08:27,461 - src.data.market_data - INFO - Extending history for PFE - fetching 7 days
+2025-09-04 15:08:27,475 - src.data.market_data - INFO - Extending history for TMO - fetching 7 days
+2025-09-04 15:08:27,475 - src.data.market_data - INFO - Extending history for COST - fetching 7 days
+2025-09-04 15:08:27,492 - src.data.market_data - INFO - Extending history for WMT - fetching 7 days
+2025-09-04 15:08:27,507 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-04 15:08:27,513 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 15:08:27,539 - src.data.market_data - INFO - Fetched 28 records for ABBV from API
+2025-09-04 15:08:27,838 - src.data.market_data - INFO - Fetched 28 records for AVGO from API
+2025-09-04 15:08:27,870 - src.data.market_data - INFO - Fetched 28 records for KO from API
+2025-09-04 15:08:27,902 - src.data.market_data - INFO - Fetched 28 records for PEP from API
+2025-09-04 15:08:27,934 - src.data.market_data - INFO - Fetched 28 records for COST from API
+2025-09-04 15:08:27,964 - src.data.market_data - INFO - Fetched 28 records for WMT from API
+2025-09-04 15:08:27,980 - src.data.market_data - INFO - Fetched 28 records for TMO from API
+2025-09-04 15:08:28,014 - src.data.market_data - INFO - Fetched 28 records for PFE from API
+2025-09-04 15:08:28,043 - src.data.market_data - INFO - Fetched 28 records for BAC from API
+2025-09-04 15:08:28,075 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 15:08:29,103 - src.data.market_data - INFO - Extending history for ABT - fetching 7 days
+2025-09-04 15:08:29,118 - src.data.market_data - INFO - Extending history for LIN - fetching 7 days
+2025-09-04 15:08:29,118 - src.data.market_data - INFO - Extending history for CSCO - fetching 7 days
+2025-09-04 15:08:29,133 - src.data.market_data - INFO - Extending history for DIS - fetching 7 days
+2025-09-04 15:08:29,150 - src.data.market_data - INFO - Extending history for ACN - fetching 7 days
+2025-09-04 15:08:29,165 - src.data.market_data - INFO - Extending history for DHR - fetching 7 days
+2025-09-04 15:08:29,165 - src.data.market_data - INFO - Extending history for TXN - fetching 7 days
+2025-09-04 15:08:29,181 - src.data.market_data - INFO - Extending history for VZ - fetching 7 days
+2025-09-04 15:08:29,198 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-04 15:08:29,198 - src.data.market_data - INFO - Extending history for ADBE - fetching 7 days
+2025-09-04 15:08:29,244 - src.data.market_data - INFO - Fetched 28 records for ABT from API
+2025-09-04 15:08:29,529 - src.data.market_data - INFO - Fetched 28 records for LIN from API
+2025-09-04 15:08:29,562 - src.data.market_data - INFO - Fetched 28 records for ACN from API
+2025-09-04 15:08:29,593 - src.data.market_data - INFO - Fetched 28 records for DIS from API
+2025-09-04 15:08:29,624 - src.data.market_data - INFO - Fetched 28 records for CSCO from API
+2025-09-04 15:08:29,640 - src.data.market_data - INFO - Fetched 28 records for DHR from API
+2025-09-04 15:08:29,671 - src.data.market_data - INFO - Fetched 28 records for VZ from API
+2025-09-04 15:08:29,718 - src.data.market_data - INFO - Fetched 28 records for TXN from API
+2025-09-04 15:08:29,750 - src.data.market_data - INFO - Fetched 28 records for WFC from API
+2025-09-04 15:08:29,782 - src.data.market_data - INFO - Fetched 28 records for ADBE from API
+2025-09-04 15:08:30,824 - src.data.market_data - INFO - Extending history for NEE - fetching 7 days
+2025-09-04 15:08:30,840 - src.data.market_data - INFO - Extending history for ORCL - fetching 7 days
+2025-09-04 15:08:30,840 - src.data.market_data - INFO - Extending history for BMY - fetching 7 days
+2025-09-04 15:08:30,855 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-04 15:08:30,871 - src.data.market_data - INFO - Extending history for RTX - fetching 7 days
+2025-09-04 15:08:30,886 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-04 15:08:30,886 - src.data.market_data - INFO - Extending history for CMCSA - fetching 7 days
+2025-09-04 15:08:30,903 - src.data.market_data - INFO - Extending history for COP - fetching 7 days
+2025-09-04 15:08:30,918 - src.data.market_data - INFO - Extending history for NFLX - fetching 7 days
+2025-09-04 15:08:30,920 - src.data.market_data - INFO - Extending history for AMD - fetching 7 days
+2025-09-04 15:08:30,950 - src.data.market_data - INFO - Fetched 28 records for NEE from API
+2025-09-04 15:08:31,169 - src.data.market_data - INFO - Fetched 28 records for ORCL from API
+2025-09-04 15:08:31,190 - src.data.market_data - INFO - Fetched 28 records for BMY from API
+2025-09-04 15:08:31,221 - src.data.market_data - INFO - Fetched 28 records for RTX from API
+2025-09-04 15:08:31,232 - src.data.market_data - INFO - Fetched 28 records for PM from API
+2025-09-04 15:08:31,281 - src.data.market_data - INFO - Fetched 28 records for CMCSA from API
+2025-09-04 15:08:31,297 - src.data.market_data - INFO - Fetched 28 records for T from API
+2025-09-04 15:08:31,321 - src.data.market_data - INFO - Fetched 28 records for NFLX from API
+2025-09-04 15:08:31,338 - src.data.market_data - INFO - Fetched 28 records for COP from API
+2025-09-04 15:08:31,364 - src.data.market_data - INFO - Fetched 28 records for AMD from API
+2025-09-04 15:08:32,408 - src.data.market_data - INFO - Extending history for LOW - fetching 7 days
+2025-09-04 15:08:32,408 - src.data.market_data - INFO - Extending history for HON - fetching 7 days
+2025-09-04 15:08:32,428 - src.data.market_data - INFO - Extending history for AMGN - fetching 7 days
+2025-09-04 15:08:32,428 - src.data.market_data - INFO - Extending history for UPS - fetching 7 days
+2025-09-04 15:08:32,440 - src.data.market_data - INFO - Extending history for IBM - fetching 7 days
+2025-09-04 15:08:32,448 - src.data.market_data - INFO - Extending history for BA - fetching 7 days
+2025-09-04 15:08:32,458 - src.data.market_data - INFO - Extending history for GS - fetching 7 days
+2025-09-04 15:08:32,458 - src.data.market_data - INFO - Extending history for SPGI - fetching 7 days
+2025-09-04 15:08:32,471 - src.data.market_data - INFO - Extending history for DE - fetching 7 days
+2025-09-04 15:08:32,471 - src.data.market_data - INFO - Extending history for BKNG - fetching 7 days
+2025-09-04 15:08:32,523 - src.data.market_data - INFO - Fetched 28 records for HON from API
+2025-09-04 15:08:32,707 - src.data.market_data - INFO - Fetched 28 records for LOW from API
+2025-09-04 15:08:32,738 - src.data.market_data - INFO - Fetched 28 records for AMGN from API
+2025-09-04 15:08:32,754 - src.data.market_data - INFO - Fetched 28 records for UPS from API
+2025-09-04 15:08:32,801 - src.data.market_data - INFO - Fetched 28 records for GS from API
+2025-09-04 15:08:32,833 - src.data.market_data - INFO - Fetched 28 records for SPGI from API
+2025-09-04 15:08:32,866 - src.data.market_data - INFO - Fetched 28 records for IBM from API
+2025-09-04 15:08:32,898 - src.data.market_data - INFO - Fetched 28 records for BA from API
+2025-09-04 15:08:32,928 - src.data.market_data - INFO - Fetched 28 records for DE from API
+2025-09-04 15:08:32,960 - src.data.market_data - INFO - Fetched 28 records for BKNG from API
+2025-09-04 15:08:34,003 - src.data.market_data - INFO - Extending history for BLK - fetching 7 days
+2025-09-04 15:08:34,018 - src.data.market_data - INFO - Extending history for ELV - fetching 7 days
+2025-09-04 15:08:34,025 - src.data.market_data - INFO - Extending history for CAT - fetching 7 days
+2025-09-04 15:08:34,034 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-04 15:08:34,034 - src.data.market_data - INFO - Extending history for GILD - fetching 7 days
+2025-09-04 15:08:34,050 - src.data.market_data - INFO - Extending history for ADP - fetching 7 days
+2025-09-04 15:08:34,050 - src.data.market_data - INFO - Extending history for SYK - fetching 7 days
+2025-09-04 15:08:34,066 - src.data.market_data - INFO - Extending history for TJX - fetching 7 days
+2025-09-04 15:08:34,066 - src.data.market_data - INFO - Extending history for VRTX - fetching 7 days
+2025-09-04 15:08:34,083 - src.data.market_data - INFO - Extending history for AXP - fetching 7 days
+2025-09-04 15:08:34,130 - src.data.market_data - INFO - Fetched 28 records for ELV from API
+2025-09-04 15:08:34,326 - src.data.market_data - INFO - Fetched 28 records for BLK from API
+2025-09-04 15:08:34,355 - src.data.market_data - INFO - Fetched 28 records for CAT from API
+2025-09-04 15:08:34,367 - src.data.market_data - INFO - Fetched 28 records for MDLZ from API
+2025-09-04 15:08:34,400 - src.data.market_data - INFO - Fetched 28 records for ADP from API
+2025-09-04 15:08:34,432 - src.data.market_data - INFO - Fetched 28 records for GILD from API
+2025-09-04 15:08:34,450 - src.data.market_data - INFO - Fetched 28 records for SYK from API
+2025-09-04 15:08:34,478 - src.data.market_data - INFO - Fetched 28 records for TJX from API
+2025-09-04 15:08:34,494 - src.data.market_data - INFO - Fetched 28 records for VRTX from API
+2025-09-04 15:08:34,526 - src.data.market_data - INFO - Fetched 28 records for AXP from API
+2025-09-04 15:08:35,553 - src.data.market_data - INFO - Extending history for ADI - fetching 7 days
+2025-09-04 15:08:35,568 - src.data.market_data - INFO - Extending history for CVS - fetching 7 days
+2025-09-04 15:08:35,568 - src.data.market_data - INFO - Extending history for SCHW - fetching 7 days
+2025-09-04 15:08:35,584 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 15:08:35,601 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 15:08:35,615 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-04 15:08:35,631 - src.data.market_data - INFO - Extending history for ISRG - fetching 7 days
+2025-09-04 15:08:35,631 - src.data.market_data - INFO - Extending history for SO - fetching 7 days
+2025-09-04 15:08:35,647 - src.data.market_data - INFO - Extending history for TMUS - fetching 7 days
+2025-09-04 15:08:35,647 - src.data.market_data - INFO - Extending history for ZTS - fetching 7 days
+2025-09-04 15:08:35,694 - src.data.market_data - INFO - Fetched 28 records for ADI from API
+2025-09-04 15:08:35,978 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 15:08:36,043 - src.data.market_data - INFO - Fetched 28 records for CVS from API
+2025-09-04 15:08:36,072 - src.data.market_data - INFO - Fetched 28 records for PLD from API
+2025-09-04 15:08:36,088 - src.data.market_data - INFO - Fetched 28 records for SCHW from API
+2025-09-04 15:08:36,130 - src.data.market_data - INFO - Fetched 28 records for SO from API
+2025-09-04 15:08:36,152 - src.data.market_data - INFO - Fetched 28 records for ISRG from API
+2025-09-04 15:08:36,195 - src.data.market_data - INFO - Fetched 28 records for LRCX from API
+2025-09-04 15:08:36,230 - src.data.market_data - INFO - Fetched 28 records for TMUS from API
+2025-09-04 15:08:36,246 - src.data.market_data - INFO - Fetched 28 records for ZTS from API
+2025-09-04 15:08:37,294 - src.data.market_data - INFO - Extending history for REGN - fetching 7 days
+2025-09-04 15:08:37,308 - src.data.market_data - INFO - Extending history for NOW - fetching 7 days
+2025-09-04 15:08:37,325 - src.data.market_data - INFO - Extending history for CB - fetching 7 days
+2025-09-04 15:08:37,332 - src.data.market_data - INFO - Extending history for MMC - fetching 7 days
+2025-09-04 15:08:37,343 - src.data.market_data - INFO - Extending history for FDX - fetching 7 days
+2025-09-04 15:08:37,343 - src.data.market_data - INFO - Extending history for EOG - fetching 7 days
+2025-09-04 15:08:37,343 - src.data.market_data - INFO - Extending history for MO - fetching 7 days
+2025-09-04 15:08:37,356 - src.data.market_data - INFO - Extending history for ETN - fetching 7 days
+2025-09-04 15:08:37,356 - src.data.market_data - INFO - Extending history for BSX - fetching 7 days
+2025-09-04 15:08:37,356 - src.data.market_data - INFO - Extending history for DUK - fetching 7 days
+2025-09-04 15:08:37,436 - src.data.market_data - INFO - Fetched 28 records for NOW from API
+2025-09-04 15:08:37,641 - src.data.market_data - INFO - Fetched 28 records for MMC from API
+2025-09-04 15:08:37,657 - src.data.market_data - INFO - Fetched 28 records for CB from API
+2025-09-04 15:08:37,688 - src.data.market_data - INFO - Fetched 28 records for REGN from API
+2025-09-04 15:08:37,733 - src.data.market_data - INFO - Fetched 28 records for MO from API
+2025-09-04 15:08:37,752 - src.data.market_data - INFO - Fetched 28 records for FDX from API
+2025-09-04 15:08:37,783 - src.data.market_data - INFO - Fetched 28 records for ETN from API
+2025-09-04 15:08:37,814 - src.data.market_data - INFO - Fetched 28 records for DUK from API
+2025-09-04 15:08:37,834 - src.data.market_data - INFO - Fetched 28 records for EOG from API
+2025-09-04 15:08:37,862 - src.data.market_data - INFO - Fetched 28 records for BSX from API
+2025-09-04 15:08:38,888 - src.data.market_data - INFO - Extending history for ITW - fetching 7 days
+2025-09-04 15:08:39,032 - src.data.market_data - INFO - Fetched 28 records for ITW from API
+2025-09-04 15:08:39,062 - src.data.market_data - INFO - Retrieved data for 91 assets
+2025-09-04 15:08:39,062 - src.prediction.predictor - INFO - Generating predictions for 91 assets
+2025-09-04 15:08:39,124 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,204 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,282 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,377 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,440 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,519 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,582 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,677 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,788 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,883 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:39,978 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,025 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,104 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,168 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,262 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,357 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,440 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,515 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,563 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,641 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,736 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,784 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,863 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:40,943 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,037 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,116 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,195 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,290 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,401 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,496 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,590 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,670 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,763 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,874 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:41,968 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,043 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,080 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,127 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,191 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,269 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,364 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,411 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,460 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,522 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,570 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,633 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,712 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,791 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,869 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:42,964 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,045 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,124 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,202 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,266 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,345 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,408 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,504 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,598 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,677 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,756 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,867 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:43,963 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,043 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,121 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,201 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,279 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,358 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,448 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,501 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,548 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,611 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,658 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,706 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,784 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,879 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:44,963 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,050 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,112 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,172 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,239 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,318 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,365 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,450 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,524 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,571 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,618 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,713 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,792 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,871 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:45,934 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:46,013 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 15:08:46,051 - src.prediction.predictor - INFO - Generated 91 asset predictions
+2025-09-04 15:08:46,051 - src.core.trading_system - INFO - Generated 91 valid predictions
+2025-09-04 15:08:46,051 - src.core.trading_system - INFO - Top 10 investment opportunities:
+2025-09-04 16:09:16,203 - src.kelly.calculator - INFO - Kelly recommendation: $900.00 (10.0% of capital), EV=0.033
+2025-09-04 16:14:49,366 - src.portfolio.manager - INFO - Placing bet for MU at $118.71 with 78.7% probability
+2025-09-04 16:14:49,366 - src.kelly.calculator - INFO - Kelly recommendation: $900.00 (10.0% of capital), EV=0.033
+2025-09-04 16:14:49,397 - src.portfolio.manager - INFO - Bet placed: d35dcc75-f8af-4c31-864d-645dcd74c721 - MU $900.00 ($895.50 after $4.50 fee) (7.54 shares at $118.71)
+2025-09-04 16:14:49,397 - src.core.trading_system - INFO - Bet placed successfully: d35dcc75-f8af-4c31-864d-645dcd74c721
+2025-09-04 16:21:08,021 - src.core.trading_system - INFO - Cleaning up resources...
+2025-09-04 16:21:08,021 - src.data.market_data - INFO - Market data manager cleanup complete
+2025-09-04 16:21:08,031 - src.portfolio.manager - INFO - Portfolio manager cleanup complete
+2025-09-04 16:21:08,031 - src.core.trading_system - INFO - Cleanup complete
+2025-09-04 16:21:08,031 - __main__ - INFO - System shutdown complete
+2025-09-04 16:22:38,339 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 16:22:38,339 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 16:22:38,339 - src.cli.bet_monitor - ERROR - Error fetching live bets: Execution failed on sql '
+            SELECT 
+                b.bet_id,
+                b.symbol,
+                b.bet_type,
+                b.amount,
+                b.probability,
+                b.entry_price,
+                b.win_threshold,
+                b.loss_threshold,
+                b.status,
+                b.created_at,
+                b.entry_fee,
+                JULIANDAY('now') - JULIANDAY(b.created_at) as days_active
+            FROM bets b
+            WHERE b.status = 'alive'
+            ORDER BY b.created_at DESC
+            ': no such column: b.bet_type
+2025-09-04 17:41:27,601 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 17:41:27,606 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 17:41:27,606 - src.cli.bet_monitor - ERROR - Error fetching live bets: Execution failed on sql '
+            SELECT 
+                b.bet_id,
+                b.symbol,
+                b.bet_type,
+                b.amount,
+                b.probability,
+                b.entry_price,
+                b.win_threshold,
+                b.loss_threshold,
+                b.status,
+                b.created_at,
+                b.entry_fee,
+                JULIANDAY('now') - JULIANDAY(b.created_at) as days_active
+            FROM bets b
+            WHERE b.status = 'alive'
+            ORDER BY b.created_at DESC
+            ': no such column: b.bet_type
+2025-09-04 17:46:05,931 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 17:46:05,941 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 17:46:05,946 - src.cli.bet_monitor - ERROR - Error fetching live bets: Execution failed on sql '
+            SELECT 
+                b.bet_id,
+                b.symbol,
+                b.bet_type,
+                b.amount,
+                b.probability,
+                b.entry_price,
+                b.win_threshold,
+                b.loss_threshold,
+                b.status,
+                b.created_at,
+                b.entry_fee,
+                JULIANDAY('now') - JULIANDAY(b.created_at) as days_active
+            FROM bets b
+            WHERE b.status = 'alive'
+            ORDER BY b.created_at DESC
+            ': no such column: b.bet_type
+2025-09-04 17:47:43,414 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 17:47:43,414 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 17:47:43,444 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 17:47:50,273 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 17:47:50,391 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 17:47:50,491 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 17:48:00,721 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 17:48:00,731 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 17:48:00,771 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 17:48:02,641 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 17:48:02,671 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 17:48:02,774 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 17:48:13,641 - __main__ - INFO - Starting Kelly Trading System in manual mode
+2025-09-04 17:48:13,851 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error loading LSTM model: Could not deserialize 'keras.metrics.mse' because it is not a KerasSaveable subclass
+2025-09-04 17:48:13,893 - src.prediction.algorithms.base_algorithm.Linear Regression - INFO - Regression models loaded from disk
+2025-09-04 17:48:13,894 - src.prediction.predictor - INFO - Initialized 5 algorithms: ['sma', 'rsi', 'rf', 'lstm', 'regression']
+2025-09-04 17:48:13,894 - src.core.trading_system - INFO - Starting trading system in manual mode
+2025-09-04 17:48:13,894 - src.core.trading_system - INFO - Initializing system components...
+2025-09-04 17:48:13,894 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 17:48:13,894 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 17:48:13,894 - src.prediction.predictor - INFO - Initializing prediction engine...
+2025-09-04 17:48:13,901 - src.prediction.predictor - INFO - Loaded algorithm weights: {'sma': 0.2, 'rsi': 0.2, 'rf': 0.2, 'lstm': 0.2, 'regression': 0.2}
+2025-09-04 17:48:13,901 - src.prediction.predictor - INFO - Prediction engine initialized
+2025-09-04 17:48:13,901 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-04 17:48:13,901 - src.portfolio.manager - INFO - Loaded portfolio state: $8100.00 cash, 2 active bets
+2025-09-04 17:48:13,901 - src.portfolio.manager - INFO - Portfolio initialized: $8100.00 cash, 2 active bets
+2025-09-04 17:48:13,901 - src.risk.manager - INFO - Initializing risk management system...
+2025-09-04 17:48:13,901 - src.risk.manager - INFO - Risk management initialized - Status: active
+2025-09-04 17:48:13,901 - src.core.trading_system - INFO - All components initialized successfully
+2025-09-04 17:48:13,901 - src.core.trading_system - INFO - Checking existing bets for threshold triggers...
+2025-09-04 17:48:13,909 - src.portfolio.manager - INFO - Retrieved 2 alive bets for monitoring
+2025-09-04 17:48:13,910 - src.core.trading_system - INFO - Monitoring 2 active positions
+2025-09-04 17:48:13,921 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 17:48:14,426 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 17:48:14,451 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 17:48:14,546 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 17:48:14,564 - src.core.trading_system - INFO - CLOSING POSITION - CRM: WIN THRESHOLD HIT: +0.00% (target: -98.05%)
+2025-09-04 17:48:14,567 - src.portfolio.manager - ERROR - Error closing bet 9a011663-5395-4e9a-a7b0-a14752969aa5: no such column: pnl
+2025-09-04 17:48:14,567 - src.core.trading_system - ERROR - Error closing bet 9a011663-5395-4e9a-a7b0-a14752969aa5: no such column: pnl
+2025-09-04 17:48:14,567 - src.core.trading_system - INFO - CLOSING POSITION - MU: WIN THRESHOLD HIT: +0.00% (target: -95.79%)
+2025-09-04 17:48:14,567 - src.portfolio.manager - ERROR - Error closing bet d35dcc75-f8af-4c31-864d-645dcd74c721: no such column: pnl
+2025-09-04 17:48:14,567 - src.core.trading_system - ERROR - Error closing bet d35dcc75-f8af-4c31-864d-645dcd74c721: no such column: pnl
+2025-09-04 17:48:14,567 - src.core.trading_system - INFO - Fetching market data and generating predictions...
+2025-09-04 17:48:14,567 - src.utils.asset_selector - INFO - Selected 141 assets (91 stocks, 50 crypto)
+2025-09-04 17:48:14,567 - src.data.market_data - INFO - Fetching data for 141 assets
+2025-09-04 17:48:14,571 - src.data.market_data - INFO - Extending history for AAPL - fetching 7 days
+2025-09-04 17:48:14,571 - src.data.market_data - INFO - Extending history for MSFT - fetching 7 days
+2025-09-04 17:48:14,581 - src.data.market_data - INFO - Extending history for AMZN - fetching 7 days
+2025-09-04 17:48:14,591 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-04 17:48:14,596 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-04 17:48:14,601 - src.data.market_data - INFO - Extending history for TSLA - fetching 7 days
+2025-09-04 17:48:14,601 - src.data.market_data - INFO - Extending history for GOOG - fetching 7 days
+2025-09-04 17:48:14,612 - src.data.market_data - INFO - Extending history for BRK-B - fetching 7 days
+2025-09-04 17:48:14,626 - src.data.market_data - INFO - Extending history for META - fetching 7 days
+2025-09-04 17:48:14,631 - src.data.market_data - INFO - Extending history for UNH - fetching 7 days
+2025-09-04 17:48:14,691 - src.data.market_data - INFO - Fetched 28 records for AAPL from API
+2025-09-04 17:48:14,761 - src.data.market_data - INFO - Fetched 28 records for MSFT from API
+2025-09-04 17:48:14,871 - src.data.market_data - INFO - Fetched 28 records for NVDA from API
+2025-09-04 17:48:14,891 - src.data.market_data - INFO - Fetched 28 records for TSLA from API
+2025-09-04 17:48:14,913 - src.data.market_data - INFO - Fetched 28 records for AMZN from API
+2025-09-04 17:48:14,937 - src.data.market_data - INFO - Fetched 28 records for UNH from API
+2025-09-04 17:48:14,984 - src.data.market_data - INFO - Fetched 28 records for GOOGL from API
+2025-09-04 17:48:15,016 - src.data.market_data - INFO - Fetched 28 records for META from API
+2025-09-04 17:48:15,030 - src.data.market_data - INFO - Fetched 28 records for BRK-B from API
+2025-09-04 17:48:15,056 - src.data.market_data - INFO - Fetched 28 records for GOOG from API
+2025-09-04 17:48:16,081 - src.data.market_data - INFO - Extending history for XOM - fetching 7 days
+2025-09-04 17:48:16,081 - src.data.market_data - INFO - Extending history for LLY - fetching 7 days
+2025-09-04 17:48:16,081 - src.data.market_data - INFO - Extending history for JPM - fetching 7 days
+2025-09-04 17:48:16,094 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-04 17:48:16,094 - src.data.market_data - INFO - Extending history for V - fetching 7 days
+2025-09-04 17:48:16,101 - src.data.market_data - INFO - Extending history for PG - fetching 7 days
+2025-09-04 17:48:16,101 - src.data.market_data - INFO - Extending history for MA - fetching 7 days
+2025-09-04 17:48:16,111 - src.data.market_data - INFO - Extending history for HD - fetching 7 days
+2025-09-04 17:48:16,111 - src.data.market_data - INFO - Extending history for CVX - fetching 7 days
+2025-09-04 17:48:16,121 - src.data.market_data - INFO - Extending history for MRK - fetching 7 days
+2025-09-04 17:48:16,186 - src.data.market_data - INFO - Fetched 28 records for XOM from API
+2025-09-04 17:48:16,291 - src.data.market_data - INFO - Fetched 28 records for JNJ from API
+2025-09-04 17:48:16,311 - src.data.market_data - INFO - Fetched 28 records for LLY from API
+2025-09-04 17:48:16,321 - src.data.market_data - INFO - Fetched 28 records for JPM from API
+2025-09-04 17:48:16,341 - src.data.market_data - INFO - Fetched 28 records for V from API
+2025-09-04 17:48:16,351 - src.data.market_data - INFO - Fetched 28 records for PG from API
+2025-09-04 17:48:16,371 - src.data.market_data - INFO - Fetched 28 records for CVX from API
+2025-09-04 17:48:16,381 - src.data.market_data - INFO - Fetched 28 records for HD from API
+2025-09-04 17:48:16,401 - src.data.market_data - INFO - Fetched 28 records for MA from API
+2025-09-04 17:48:16,421 - src.data.market_data - INFO - Fetched 28 records for MRK from API
+2025-09-04 17:48:17,441 - src.data.market_data - INFO - Extending history for ABBV - fetching 7 days
+2025-09-04 17:48:17,441 - src.data.market_data - INFO - Extending history for PEP - fetching 7 days
+2025-09-04 17:48:17,451 - src.data.market_data - INFO - Extending history for KO - fetching 7 days
+2025-09-04 17:48:17,451 - src.data.market_data - INFO - Extending history for AVGO - fetching 7 days
+2025-09-04 17:48:17,461 - src.data.market_data - INFO - Extending history for PFE - fetching 7 days
+2025-09-04 17:48:17,466 - src.data.market_data - INFO - Extending history for TMO - fetching 7 days
+2025-09-04 17:48:17,471 - src.data.market_data - INFO - Extending history for COST - fetching 7 days
+2025-09-04 17:48:17,471 - src.data.market_data - INFO - Extending history for WMT - fetching 7 days
+2025-09-04 17:48:17,471 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-04 17:48:17,482 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 17:48:17,491 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 17:48:17,546 - src.data.market_data - INFO - Fetched 28 records for KO from API
+2025-09-04 17:48:17,641 - src.data.market_data - INFO - Fetched 28 records for PEP from API
+2025-09-04 17:48:17,651 - src.data.market_data - INFO - Fetched 28 records for AVGO from API
+2025-09-04 17:48:17,661 - src.data.market_data - INFO - Fetched 28 records for ABBV from API
+2025-09-04 17:48:17,681 - src.data.market_data - INFO - Fetched 28 records for PFE from API
+2025-09-04 17:48:17,691 - src.data.market_data - INFO - Fetched 28 records for COST from API
+2025-09-04 17:48:17,705 - src.data.market_data - INFO - Fetched 28 records for TMO from API
+2025-09-04 17:48:17,721 - src.data.market_data - INFO - Fetched 28 records for WMT from API
+2025-09-04 17:48:17,736 - src.data.market_data - INFO - Fetched 28 records for BAC from API
+2025-09-04 17:48:18,761 - src.data.market_data - INFO - Extending history for ABT - fetching 7 days
+2025-09-04 17:48:18,761 - src.data.market_data - INFO - Extending history for LIN - fetching 7 days
+2025-09-04 17:48:18,771 - src.data.market_data - INFO - Extending history for CSCO - fetching 7 days
+2025-09-04 17:48:18,775 - src.data.market_data - INFO - Extending history for DIS - fetching 7 days
+2025-09-04 17:48:18,781 - src.data.market_data - INFO - Extending history for ACN - fetching 7 days
+2025-09-04 17:48:18,781 - src.data.market_data - INFO - Extending history for DHR - fetching 7 days
+2025-09-04 17:48:18,781 - src.data.market_data - INFO - Extending history for TXN - fetching 7 days
+2025-09-04 17:48:18,792 - src.data.market_data - INFO - Extending history for VZ - fetching 7 days
+2025-09-04 17:48:18,792 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-04 17:48:18,801 - src.data.market_data - INFO - Extending history for ADBE - fetching 7 days
+2025-09-04 17:48:18,861 - src.data.market_data - INFO - Fetched 28 records for ABT from API
+2025-09-04 17:48:18,981 - src.data.market_data - INFO - Fetched 28 records for ACN from API
+2025-09-04 17:48:18,998 - src.data.market_data - INFO - Fetched 28 records for LIN from API
+2025-09-04 17:48:19,011 - src.data.market_data - INFO - Fetched 28 records for DIS from API
+2025-09-04 17:48:19,045 - src.data.market_data - INFO - Fetched 28 records for DHR from API
+2025-09-04 17:48:19,051 - src.data.market_data - INFO - Fetched 28 records for WFC from API
+2025-09-04 17:48:19,072 - src.data.market_data - INFO - Fetched 28 records for VZ from API
+2025-09-04 17:48:19,082 - src.data.market_data - INFO - Fetched 28 records for TXN from API
+2025-09-04 17:48:19,101 - src.data.market_data - INFO - Fetched 28 records for CSCO from API
+2025-09-04 17:48:19,111 - src.data.market_data - INFO - Fetched 28 records for ADBE from API
+2025-09-04 17:48:20,151 - src.data.market_data - INFO - Extending history for NEE - fetching 7 days
+2025-09-04 17:48:20,151 - src.data.market_data - INFO - Extending history for ORCL - fetching 7 days
+2025-09-04 17:48:20,161 - src.data.market_data - INFO - Extending history for BMY - fetching 7 days
+2025-09-04 17:48:20,161 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-04 17:48:20,171 - src.data.market_data - INFO - Extending history for RTX - fetching 7 days
+2025-09-04 17:48:20,171 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-04 17:48:20,176 - src.data.market_data - INFO - Extending history for CMCSA - fetching 7 days
+2025-09-04 17:48:20,181 - src.data.market_data - INFO - Extending history for COP - fetching 7 days
+2025-09-04 17:48:20,181 - src.data.market_data - INFO - Extending history for NFLX - fetching 7 days
+2025-09-04 17:48:20,193 - src.data.market_data - INFO - Extending history for AMD - fetching 7 days
+2025-09-04 17:48:20,251 - src.data.market_data - INFO - Fetched 28 records for ORCL from API
+2025-09-04 17:48:20,321 - src.data.market_data - INFO - Fetched 28 records for NEE from API
+2025-09-04 17:48:20,353 - src.data.market_data - INFO - Fetched 28 records for T from API
+2025-09-04 17:48:20,385 - src.data.market_data - INFO - Fetched 28 records for PM from API
+2025-09-04 17:48:20,391 - src.data.market_data - INFO - Fetched 28 records for COP from API
+2025-09-04 17:48:20,411 - src.data.market_data - INFO - Fetched 28 records for AMD from API
+2025-09-04 17:48:20,421 - src.data.market_data - INFO - Fetched 28 records for RTX from API
+2025-09-04 17:48:20,441 - src.data.market_data - INFO - Fetched 28 records for CMCSA from API
+2025-09-04 17:48:20,451 - src.data.market_data - INFO - Fetched 28 records for NFLX from API
+2025-09-04 17:48:20,471 - src.data.market_data - INFO - Fetched 28 records for BMY from API
+2025-09-04 17:48:21,481 - src.data.market_data - INFO - Extending history for LOW - fetching 7 days
+2025-09-04 17:48:21,481 - src.data.market_data - INFO - Extending history for HON - fetching 7 days
+2025-09-04 17:48:21,491 - src.data.market_data - INFO - Extending history for AMGN - fetching 7 days
+2025-09-04 17:48:21,491 - src.data.market_data - INFO - Extending history for UPS - fetching 7 days
+2025-09-04 17:48:21,501 - src.data.market_data - INFO - Extending history for IBM - fetching 7 days
+2025-09-04 17:48:21,501 - src.data.market_data - INFO - Extending history for BA - fetching 7 days
+2025-09-04 17:48:21,511 - src.data.market_data - INFO - Extending history for GS - fetching 7 days
+2025-09-04 17:48:21,514 - src.data.market_data - INFO - Extending history for SPGI - fetching 7 days
+2025-09-04 17:48:21,514 - src.data.market_data - INFO - Extending history for DE - fetching 7 days
+2025-09-04 17:48:21,521 - src.data.market_data - INFO - Extending history for BKNG - fetching 7 days
+2025-09-04 17:48:21,577 - src.data.market_data - INFO - Fetched 28 records for LOW from API
+2025-09-04 17:48:21,691 - src.data.market_data - INFO - Fetched 28 records for HON from API
+2025-09-04 17:48:21,704 - src.data.market_data - INFO - Fetched 28 records for AMGN from API
+2025-09-04 17:48:21,731 - src.data.market_data - INFO - Fetched 28 records for BA from API
+2025-09-04 17:48:21,741 - src.data.market_data - INFO - Fetched 28 records for UPS from API
+2025-09-04 17:48:21,761 - src.data.market_data - INFO - Fetched 28 records for GS from API
+2025-09-04 17:48:21,781 - src.data.market_data - INFO - Fetched 28 records for IBM from API
+2025-09-04 17:48:21,791 - src.data.market_data - INFO - Fetched 28 records for SPGI from API
+2025-09-04 17:48:21,811 - src.data.market_data - INFO - Fetched 28 records for BKNG from API
+2025-09-04 17:48:21,821 - src.data.market_data - INFO - Fetched 28 records for DE from API
+2025-09-04 17:48:22,855 - src.data.market_data - INFO - Extending history for BLK - fetching 7 days
+2025-09-04 17:48:22,861 - src.data.market_data - INFO - Extending history for ELV - fetching 7 days
+2025-09-04 17:48:22,866 - src.data.market_data - INFO - Extending history for CAT - fetching 7 days
+2025-09-04 17:48:22,874 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-04 17:48:22,881 - src.data.market_data - INFO - Extending history for GILD - fetching 7 days
+2025-09-04 17:48:22,887 - src.data.market_data - INFO - Extending history for ADP - fetching 7 days
+2025-09-04 17:48:22,891 - src.data.market_data - INFO - Extending history for SYK - fetching 7 days
+2025-09-04 17:48:22,891 - src.data.market_data - INFO - Extending history for TJX - fetching 7 days
+2025-09-04 17:48:22,904 - src.data.market_data - INFO - Extending history for VRTX - fetching 7 days
+2025-09-04 17:48:22,911 - src.data.market_data - INFO - Extending history for AXP - fetching 7 days
+2025-09-04 17:48:22,967 - src.data.market_data - INFO - Fetched 28 records for ELV from API
+2025-09-04 17:48:23,081 - src.data.market_data - INFO - Fetched 28 records for MDLZ from API
+2025-09-04 17:48:23,101 - src.data.market_data - INFO - Fetched 28 records for BLK from API
+2025-09-04 17:48:23,111 - src.data.market_data - INFO - Fetched 28 records for GILD from API
+2025-09-04 17:48:23,131 - src.data.market_data - INFO - Fetched 28 records for SYK from API
+2025-09-04 17:48:23,144 - src.data.market_data - INFO - Fetched 28 records for CAT from API
+2025-09-04 17:48:23,161 - src.data.market_data - INFO - Fetched 28 records for TJX from API
+2025-09-04 17:48:23,181 - src.data.market_data - INFO - Fetched 28 records for VRTX from API
+2025-09-04 17:48:23,192 - src.data.market_data - INFO - Fetched 28 records for AXP from API
+2025-09-04 17:48:23,207 - src.data.market_data - INFO - Fetched 28 records for ADP from API
+2025-09-04 17:48:24,232 - src.data.market_data - INFO - Extending history for ADI - fetching 7 days
+2025-09-04 17:48:24,236 - src.data.market_data - INFO - Extending history for CVS - fetching 7 days
+2025-09-04 17:48:24,241 - src.data.market_data - INFO - Extending history for SCHW - fetching 7 days
+2025-09-04 17:48:24,247 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 17:48:24,251 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 17:48:24,251 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-04 17:48:24,261 - src.data.market_data - INFO - Extending history for ISRG - fetching 7 days
+2025-09-04 17:48:24,263 - src.data.market_data - INFO - Extending history for SO - fetching 7 days
+2025-09-04 17:48:24,271 - src.data.market_data - INFO - Extending history for TMUS - fetching 7 days
+2025-09-04 17:48:24,276 - src.data.market_data - INFO - Extending history for ZTS - fetching 7 days
+2025-09-04 17:48:24,331 - src.data.market_data - INFO - Fetched 28 records for SCHW from API
+2025-09-04 17:48:24,441 - src.data.market_data - INFO - Fetched 28 records for LRCX from API
+2025-09-04 17:48:24,461 - src.data.market_data - INFO - Fetched 28 records for CVS from API
+2025-09-04 17:48:24,481 - src.data.market_data - INFO - Fetched 28 records for ADI from API
+2025-09-04 17:48:24,491 - src.data.market_data - INFO - Fetched 28 records for ISRG from API
+2025-09-04 17:48:24,511 - src.data.market_data - INFO - Fetched 28 records for SO from API
+2025-09-04 17:48:24,521 - src.data.market_data - INFO - Fetched 28 records for PLD from API
+2025-09-04 17:48:24,541 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 17:48:24,561 - src.data.market_data - INFO - Fetched 28 records for ZTS from API
+2025-09-04 17:48:24,571 - src.data.market_data - INFO - Fetched 28 records for TMUS from API
+2025-09-04 17:48:25,591 - src.data.market_data - INFO - Extending history for REGN - fetching 7 days
+2025-09-04 17:48:25,591 - src.data.market_data - INFO - Extending history for NOW - fetching 7 days
+2025-09-04 17:48:25,604 - src.data.market_data - INFO - Extending history for CB - fetching 7 days
+2025-09-04 17:48:25,604 - src.data.market_data - INFO - Extending history for MMC - fetching 7 days
+2025-09-04 17:48:25,611 - src.data.market_data - INFO - Extending history for FDX - fetching 7 days
+2025-09-04 17:48:25,611 - src.data.market_data - INFO - Extending history for EOG - fetching 7 days
+2025-09-04 17:48:25,621 - src.data.market_data - INFO - Extending history for MO - fetching 7 days
+2025-09-04 17:48:25,626 - src.data.market_data - INFO - Extending history for ETN - fetching 7 days
+2025-09-04 17:48:25,631 - src.data.market_data - INFO - Extending history for BSX - fetching 7 days
+2025-09-04 17:48:25,634 - src.data.market_data - INFO - Extending history for DUK - fetching 7 days
+2025-09-04 17:48:25,697 - src.data.market_data - INFO - Fetched 28 records for CB from API
+2025-09-04 17:48:25,801 - src.data.market_data - INFO - Fetched 28 records for REGN from API
+2025-09-04 17:48:25,811 - src.data.market_data - INFO - Fetched 28 records for NOW from API
+2025-09-04 17:48:25,831 - src.data.market_data - INFO - Fetched 28 records for DUK from API
+2025-09-04 17:48:25,841 - src.data.market_data - INFO - Fetched 28 records for MMC from API
+2025-09-04 17:48:25,861 - src.data.market_data - INFO - Fetched 28 records for ETN from API
+2025-09-04 17:48:25,878 - src.data.market_data - INFO - Fetched 28 records for MO from API
+2025-09-04 17:48:25,891 - src.data.market_data - INFO - Fetched 28 records for BSX from API
+2025-09-04 17:48:25,904 - src.data.market_data - INFO - Fetched 28 records for FDX from API
+2025-09-04 17:48:25,921 - src.data.market_data - INFO - Fetched 28 records for EOG from API
+2025-09-04 17:48:26,943 - src.data.market_data - INFO - Extending history for ITW - fetching 7 days
+2025-09-04 17:48:27,041 - src.data.market_data - INFO - Fetched 28 records for ITW from API
+2025-09-04 17:48:27,061 - src.data.market_data - INFO - Retrieved data for 91 assets
+2025-09-04 17:48:27,061 - src.prediction.predictor - INFO - Generating predictions for 91 assets
+2025-09-04 17:48:27,061 - src.prediction.predictor - INFO - Auto-training 2 untrained models...
+2025-09-04 17:48:27,061 - src.prediction.predictor - INFO - Adding AAPL (89 records) for training
+2025-09-04 17:48:27,061 - src.prediction.predictor - INFO - Adding MSFT (89 records) for training
+2025-09-04 17:48:27,061 - src.prediction.predictor - INFO - Adding GOOGL (89 records) for training
+2025-09-04 17:48:27,061 - src.prediction.predictor - INFO - Adding NVDA (89 records) for training
+2025-09-04 17:48:27,061 - src.prediction.predictor - INFO - Adding TSLA (89 records) for training
+2025-09-04 17:48:27,061 - src.prediction.predictor - INFO - Training rf model...
+2025-09-04 17:48:27,061 - src.prediction.algorithms.base_algorithm.Random Forest - INFO - Training Random Forest model...
+2025-09-04 17:48:27,221 - src.prediction.algorithms.base_algorithm.Random Forest - INFO - Random Forest training complete - Train accuracy: 0.988, Test accuracy: 0.918
+2025-09-04 17:48:27,245 - src.prediction.algorithms.base_algorithm.Random Forest - INFO - Model saved to models\random_forest\rf_model.joblib
+2025-09-04 17:48:27,245 - src.prediction.predictor - INFO - rf model trained successfully
+2025-09-04 17:48:27,251 - src.prediction.predictor - INFO - Training lstm model...
+2025-09-04 17:48:27,251 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - Training LSTM model...
+2025-09-04 17:48:27,281 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - Prepared LSTM training data: X shape (360, 60, 13), y shape (360,)
+2025-09-04 17:48:27,325 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - LSTM model built: 21076 parameters
+2025-09-04 17:48:49,951 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - LSTM training complete - Final loss: 0.0217, Val loss: 0.0212
+2025-09-04 17:48:49,951 - absl - WARNING - You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. 
+2025-09-04 17:48:50,011 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - LSTM model saved to models\lstm\lstm_model.h5
+2025-09-04 17:48:50,012 - src.prediction.predictor - INFO - lstm model trained successfully
+2025-09-04 17:48:50,091 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,155 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,221 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,281 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,351 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,411 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,481 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,536 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,599 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,656 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,712 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,771 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,831 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,891 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:50,941 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,001 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,061 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,121 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,188 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,251 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,321 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,381 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,451 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,511 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,569 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,621 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,681 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,751 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,811 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,863 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,921 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:51,981 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,041 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,092 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,155 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,211 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,271 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,321 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,395 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,456 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,511 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,568 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,621 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,682 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,731 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,794 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,851 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,905 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:52,961 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,017 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,071 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,127 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,181 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,251 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,321 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,382 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,447 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,501 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,561 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,611 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,671 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,732 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,781 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,844 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,901 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:53,961 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,011 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,071 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,121 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,181 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,241 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,301 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,351 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,411 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,467 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,521 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,573 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,631 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,681 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,733 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,791 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,844 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,909 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:54,961 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:55,011 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:55,071 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:55,121 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:55,191 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:55,246 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:55,311 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:55,391 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - WARNING - Insufficient data: 89 < 90
+2025-09-04 17:48:55,418 - src.prediction.predictor - INFO - Generated 91 asset predictions
+2025-09-04 17:48:55,421 - src.core.trading_system - INFO - Generated 91 valid predictions
+2025-09-04 17:48:55,421 - src.core.trading_system - INFO - Top 10 investment opportunities:
+2025-09-04 17:49:10,721 - src.kelly.calculator - INFO - Kelly recommendation: $810.00 (10.0% of capital), EV=0.027
+2025-09-04 17:50:14,773 - src.portfolio.manager - INFO - Placing bet for LRCX at $97.71 with 71.7% probability
+2025-09-04 17:50:14,773 - src.kelly.calculator - INFO - Kelly recommendation: $810.00 (10.0% of capital), EV=0.027
+2025-09-04 17:50:14,801 - src.portfolio.manager - INFO - Bet placed: 954daa6f-84e2-4a26-9610-2a1a90e406ed - LRCX $810.00 ($805.95 after $4.05 fee) (8.25 shares at $97.71)
+2025-09-04 17:50:14,801 - src.core.trading_system - INFO - Bet placed successfully: 954daa6f-84e2-4a26-9610-2a1a90e406ed
+2025-09-04 17:52:30,731 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 17:52:30,731 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 17:52:30,742 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 17:52:31,371 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 17:52:31,391 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 17:52:31,541 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 17:52:31,561 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 17:52:31,662 - src.data.market_data - INFO - Fetched 28 records for LRCX from API
+2025-09-04 17:53:11,781 - src.core.trading_system - INFO - Cleaning up resources...
+2025-09-04 17:53:11,781 - src.data.market_data - INFO - Market data manager cleanup complete
+2025-09-04 17:53:11,791 - src.portfolio.manager - INFO - Portfolio manager cleanup complete
+2025-09-04 17:53:11,791 - src.core.trading_system - INFO - Cleanup complete
+2025-09-04 17:53:11,791 - __main__ - INFO - System shutdown complete
+2025-09-04 17:53:19,221 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 17:53:19,228 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 17:53:19,231 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 17:53:19,871 - src.data.market_data - INFO - Fetched 28 records for LRCX from API
+2025-09-04 17:53:19,891 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 17:53:19,984 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 17:53:20,011 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 17:53:20,103 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 17:56:47,197 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 17:56:47,199 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 17:56:47,203 - src.cli.bet_monitor - INFO - Monitoring 3 positions for threshold triggers...
+2025-09-04 17:56:47,213 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 17:56:47,960 - src.data.market_data - INFO - Fetched 28 records for LRCX from API
+2025-09-04 17:56:47,983 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 17:56:48,078 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 17:56:48,100 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 17:56:48,193 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 17:56:48,225 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 17:56:48,240 - src.data.market_data - INFO - Fetched 28 records for LRCX from API
+2025-09-04 17:56:48,263 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 17:56:48,281 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 17:56:48,306 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 17:56:48,320 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 18:01:01,784 - __main__ - INFO - Starting Kelly Trading System in manual mode
+2025-09-04 18:01:01,906 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error loading LSTM model: Could not deserialize 'keras.metrics.mse' because it is not a KerasSaveable subclass
+2025-09-04 18:01:01,906 - src.prediction.algorithms.base_algorithm.Linear Regression - INFO - Regression models loaded from disk
+2025-09-04 18:01:01,911 - src.prediction.predictor - INFO - Initialized 5 algorithms: ['sma', 'rsi', 'rf', 'lstm', 'regression']
+2025-09-04 18:01:01,912 - src.core.trading_system - INFO - Starting trading system in manual mode
+2025-09-04 18:01:01,912 - src.core.trading_system - INFO - Initializing system components...
+2025-09-04 18:01:01,912 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 18:01:01,912 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 18:01:01,912 - src.prediction.predictor - INFO - Initializing prediction engine...
+2025-09-04 18:01:01,912 - src.prediction.predictor - INFO - Loaded algorithm weights: {'sma': 0.2, 'rsi': 0.2, 'rf': 0.2, 'lstm': 0.2, 'regression': 0.2}
+2025-09-04 18:01:01,916 - src.prediction.predictor - INFO - Prediction engine initialized
+2025-09-04 18:01:01,916 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-04 18:01:01,916 - src.portfolio.manager - INFO - Loaded portfolio state: $7290.00 cash, 3 active bets
+2025-09-04 18:01:01,916 - src.portfolio.manager - INFO - Portfolio initialized: $7290.00 cash, 3 active bets
+2025-09-04 18:01:01,916 - src.risk.manager - INFO - Initializing risk management system...
+2025-09-04 18:01:01,916 - src.risk.manager - INFO - Risk management initialized - Status: active
+2025-09-04 18:01:01,916 - src.core.trading_system - INFO - All components initialized successfully
+2025-09-04 18:01:01,916 - src.core.trading_system - INFO - Checking existing bets for threshold triggers...
+2025-09-04 18:01:01,916 - src.portfolio.manager - INFO - Retrieved 3 alive bets for monitoring
+2025-09-04 18:01:01,916 - src.core.trading_system - INFO - Monitoring 3 active positions
+2025-09-04 18:01:01,928 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 18:01:02,561 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 18:01:02,582 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 18:01:02,709 - src.data.market_data - INFO - Fetched 28 records for LRCX from API
+2025-09-04 18:01:02,726 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 18:01:02,836 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 18:01:02,856 - src.core.trading_system - INFO - CLOSING POSITION - CRM: WIN THRESHOLD HIT: +0.00% (target: -98.05%)
+2025-09-04 18:01:02,856 - src.portfolio.manager - ERROR - Error closing bet 9a011663-5395-4e9a-a7b0-a14752969aa5: no such column: pnl
+2025-09-04 18:01:02,856 - src.core.trading_system - ERROR - Error closing bet 9a011663-5395-4e9a-a7b0-a14752969aa5: no such column: pnl
+2025-09-04 18:01:02,856 - src.core.trading_system - INFO - CLOSING POSITION - MU: WIN THRESHOLD HIT: +0.00% (target: -95.79%)
+2025-09-04 18:01:02,856 - src.portfolio.manager - ERROR - Error closing bet d35dcc75-f8af-4c31-864d-645dcd74c721: no such column: pnl
+2025-09-04 18:01:02,856 - src.core.trading_system - ERROR - Error closing bet d35dcc75-f8af-4c31-864d-645dcd74c721: no such column: pnl
+2025-09-04 18:01:02,856 - src.core.trading_system - INFO - CLOSING POSITION - LRCX: WIN THRESHOLD HIT: +0.00% (target: -94.88%)
+2025-09-04 18:01:02,856 - src.portfolio.manager - ERROR - Error closing bet 954daa6f-84e2-4a26-9610-2a1a90e406ed: no such column: pnl
+2025-09-04 18:01:02,856 - src.core.trading_system - ERROR - Error closing bet 954daa6f-84e2-4a26-9610-2a1a90e406ed: no such column: pnl
+2025-09-04 18:01:02,856 - src.core.trading_system - INFO - Fetching market data and generating predictions...
+2025-09-04 18:01:02,856 - src.utils.asset_selector - INFO - Selected 141 assets (91 stocks, 50 crypto)
+2025-09-04 18:01:02,856 - src.data.market_data - INFO - Fetching data for 141 assets
+2025-09-04 18:01:02,866 - src.data.market_data - INFO - Extending history for AAPL - fetching 7 days
+2025-09-04 18:01:02,867 - src.data.market_data - INFO - Extending history for MSFT - fetching 7 days
+2025-09-04 18:01:02,871 - src.data.market_data - INFO - Extending history for AMZN - fetching 7 days
+2025-09-04 18:01:02,876 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-04 18:01:02,886 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-04 18:01:02,886 - src.data.market_data - INFO - Extending history for TSLA - fetching 7 days
+2025-09-04 18:01:02,899 - src.data.market_data - INFO - Extending history for GOOG - fetching 7 days
+2025-09-04 18:01:02,899 - src.data.market_data - INFO - Extending history for BRK-B - fetching 7 days
+2025-09-04 18:01:02,906 - src.data.market_data - INFO - Extending history for META - fetching 7 days
+2025-09-04 18:01:02,916 - src.data.market_data - INFO - Extending history for UNH - fetching 7 days
+2025-09-04 18:01:02,967 - src.data.market_data - INFO - Fetched 28 records for AAPL from API
+2025-09-04 18:01:03,058 - src.data.market_data - INFO - Fetched 28 records for NVDA from API
+2025-09-04 18:01:03,146 - src.data.market_data - INFO - Fetched 28 records for MSFT from API
+2025-09-04 18:01:03,166 - src.data.market_data - INFO - Fetched 28 records for GOOGL from API
+2025-09-04 18:01:03,176 - src.data.market_data - INFO - Fetched 28 records for AMZN from API
+2025-09-04 18:01:03,204 - src.data.market_data - INFO - Fetched 28 records for GOOG from API
+2025-09-04 18:01:03,226 - src.data.market_data - INFO - Fetched 28 records for TSLA from API
+2025-09-04 18:01:03,246 - src.data.market_data - INFO - Fetched 28 records for BRK-B from API
+2025-09-04 18:01:03,266 - src.data.market_data - INFO - Fetched 28 records for META from API
+2025-09-04 18:01:03,286 - src.data.market_data - INFO - Fetched 28 records for UNH from API
+2025-09-04 18:01:03,427 - src.core.trading_system - INFO - Cleaning up resources...
+2025-09-04 18:01:03,427 - src.data.market_data - INFO - Market data manager cleanup complete
+2025-09-04 18:01:03,439 - src.portfolio.manager - INFO - Portfolio manager cleanup complete
+2025-09-04 18:01:03,439 - src.core.trading_system - INFO - Cleanup complete
+2025-09-04 18:01:03,439 - __main__ - INFO - System shutdown complete
+2025-09-04 18:01:29,543 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-04 18:01:29,543 - src.data.market_data - INFO - Market data manager initialized
+2025-09-04 18:01:29,546 - src.cli.bet_monitor - INFO - Monitoring 3 positions for threshold triggers...
+2025-09-04 18:01:29,546 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 18:01:30,162 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 18:01:30,179 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 18:01:30,296 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 18:01:30,316 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 18:01:30,406 - src.data.market_data - INFO - Fetched 28 records for LRCX from API
+2025-09-04 18:01:30,426 - src.data.market_data - INFO - Extending history for CRM - fetching 7 days
+2025-09-04 18:01:30,436 - src.data.market_data - INFO - Fetched 28 records for CRM from API
+2025-09-04 18:01:30,456 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-04 18:01:30,471 - src.data.market_data - INFO - Fetched 28 records for MU from API
+2025-09-04 18:01:30,491 - src.data.market_data - INFO - Extending history for LRCX - fetching 7 days
+2025-09-04 18:01:30,498 - src.data.market_data - INFO - Fetched 28 records for LRCX from API

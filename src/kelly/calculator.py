@@ -25,10 +25,22 @@ class BetRecommendation:
     recommended_amount: float   # Dollar amount to bet
     fraction_of_capital: float  # Fraction of capital (Kelly fraction)
     expected_value: float       # Expected value of the bet
-    is_favorable: bool         # Whether bet has positive expected value
+    is_favorable: bool         # Whether bet has positive equivalent
     kelly_fraction_raw: float  # Raw Kelly fraction before adjustments
     confidence_level: str      # High/Medium/Low confidence
     risk_warning: Optional[str] # Any risk warnings
+    
+    # Detailed calculation breakdown
+    win_probability: float     # Win probability (decimal)
+    loss_probability: float    # Loss probability (decimal)
+    win_amount_ratio: float    # Win amount / bet amount ratio (b in Kelly formula)
+    loss_amount_ratio: float   # Loss amount / bet amount ratio
+    expected_win: float        # Expected win amount
+    expected_loss: float       # Expected loss amount
+    kelly_formula_b: float     # The 'b' parameter in Kelly formula
+    kelly_formula_p: float     # The 'p' parameter in Kelly formula 
+    kelly_formula_q: float     # The 'q' parameter in Kelly formula
+    available_capital: float   # Available capital for betting
 
 
 class KellyCalculator:
@@ -43,7 +55,9 @@ class KellyCalculator:
         self.max_bet_fraction = config.get('trading', {}).get('max_bet_fraction', 0.1)  # 10% max
         
         # Risk management
-        self.min_probability = config.get('trading', {}).get('min_probability', 0.55)  # 55% minimum
+        min_prob_config = config.get('trading', {}).get('min_probability', 55.0)  # 55% minimum
+        # Convert percentage to decimal if needed
+        self.min_probability = min_prob_config / 100.0 if min_prob_config > 1.0 else min_prob_config
         self.max_loss_percentage = config.get('trading', {}).get('max_loss_percentage', 5.0)  # 5% max loss
         
     def calculate_bet_size(self, 
@@ -130,7 +144,18 @@ class KellyCalculator:
                 is_favorable=False,
                 kelly_fraction_raw=kelly_fraction_raw,
                 confidence_level="N/A",
-                risk_warning="Negative expected value - no bet recommended"
+                risk_warning="Negative expected value - no bet recommended",
+                # Detailed calculation breakdown
+                win_probability=p,
+                loss_probability=q,
+                win_amount_ratio=win_return,
+                loss_amount_ratio=loss_risk,
+                expected_win=p * win_return,
+                expected_loss=q * loss_risk,
+                kelly_formula_b=b,
+                kelly_formula_p=p,
+                kelly_formula_q=q,
+                available_capital=params.available_capital
             )
         
         # Apply Kelly fraction multiplier (conservative approach)
@@ -165,7 +190,18 @@ class KellyCalculator:
             is_favorable=is_favorable,
             kelly_fraction_raw=kelly_fraction_raw,
             confidence_level=confidence_level,
-            risk_warning=risk_warning
+            risk_warning=risk_warning,
+            # Detailed calculation breakdown
+            win_probability=p,
+            loss_probability=q,
+            win_amount_ratio=win_return,
+            loss_amount_ratio=loss_risk,
+            expected_win=p * win_return,
+            expected_loss=q * loss_risk,
+            kelly_formula_b=b,
+            kelly_formula_p=p,
+            kelly_formula_q=q,
+            available_capital=params.available_capital
         )
         
         self.logger.info(f"Kelly recommendation: ${recommended_amount:.2f} "
