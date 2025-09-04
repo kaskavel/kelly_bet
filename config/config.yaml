@@ -1,0 +1,102 @@
+# Kelly Criterion Trading System Configuration
+
+# Trading Parameters
+trading:
+  win_threshold: 5.0  # Profit target percentage
+  loss_threshold: 3.0  # Stop loss percentage
+  kelly_fraction: 0.25  # Conservative Kelly multiplier
+  max_concurrent_bets: 10
+  initial_capital: 10000.0  # Starting capital
+  min_bet_amount: 100.0     # Minimum bet size
+  max_bet_amount: 10000.0   # Maximum bet size  
+  max_bet_fraction: 0.1     # Maximum 10% of capital per bet
+  min_probability: 55.0     # Minimum 55% probability to bet
+  max_loss_percentage: 5.0  # Maximum 5% loss threshold
+  top_n_display: 10  # Number of top assets to show in manual mode
+  trading_fee_percentage: 0.5  # Trading fees (0.5% per transaction)
+  
+# Risk Management
+risk:
+  max_drawdown: 20.0  # Maximum portfolio drawdown percentage
+  loss_streak_limit: 5  # Consecutive losses before pause
+  min_capital: 1000.0  # Minimum capital to continue trading
+  
+# System Settings
+system:
+  polling_interval: 1800  # 30 minutes in seconds
+  auto_threshold: 60.0  # Default automated betting threshold
+  paper_trading: true  # Set to false for live trading
+  
+# Database
+database:
+  type: "sqlite"  # sqlite or postgresql
+  sqlite:
+    path: "data/trading.db"
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "kelly_trading"
+    username: "trader"
+    password: "password"
+    
+# Data Sources
+data_sources:
+  stocks:
+    provider: "yfinance"
+    index: "sp500"  # S&P 500 stocks
+    cache_duration: 1800  # 30 minutes
+  crypto:
+    provider: "ccxt"
+    exchange: "binance"
+    top_n: 50  # Top N crypto by market cap
+    cache_duration: 900   # 15 minutes (crypto more volatile)
+  
+# Data Storage & Retention
+data_storage:
+  detailed_retention_days: 90  # Keep 30-min intervals for 90 days
+  historical_aggregation: "daily"  # Older data aggregated to daily
+  max_db_size_gb: 5  # Alert if DB exceeds this size
+  cleanup_interval_days: 7  # Clean up old data weekly
+
+# Prediction Algorithms
+prediction:
+  algorithms:
+    sma:  # Simple Moving Average
+      short_window: 5
+      long_window: 20
+      momentum_window: 10
+    rsi:  # Relative Strength Index
+      rsi_period: 14
+      oversold_level: 30
+      overbought_level: 70
+    random_forest:  # Random Forest ML
+      n_estimators: 100
+      max_depth: 10
+      min_samples_split: 10
+      target_return: 0.05  # 5% target return for training
+    lstm:  # LSTM Neural Network
+      sequence_length: 60    # 60 time steps for LSTM input
+      lstm_units: 50         # Number of LSTM units
+      dropout_rate: 0.2      # Dropout for regularization
+      epochs: 50             # Training epochs
+      batch_size: 32         # Batch size for training
+      target_return: 0.03    # 3% target return for training
+    regression:  # Linear Regression Models
+      model_type: "ridge"    # linear, ridge, lasso
+      alpha: 1.0             # Regularization strength
+      target_return: 0.03    # 3% target return for training
+      prediction_horizon: 5  # Predict 5 periods ahead
+  
+  # Ensemble settings
+  ensemble:
+    initial_equal_weights: true
+    performance_window_days: 30  # Period to evaluate algorithm performance
+    weight_update_frequency: 7   # Update weights every 7 days
+    minimum_predictions: 10      # Minimum predictions before adjusting weights
+    
+# Logging
+logging:
+  level: "INFO"
+  file: "logs/trading.log"
+  max_size_mb: 100
+  backup_count: 5
