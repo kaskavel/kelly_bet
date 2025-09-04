@@ -102,7 +102,7 @@ class LSTMAlgorithm(BasePredictionAlgorithm):
             
         self.logger.info("Training LSTM model...")
         
-        if len(data) < self.get_required_data_points():
+        if len(data) < 50:
             self.logger.warning("Insufficient data for LSTM training")
             return
         

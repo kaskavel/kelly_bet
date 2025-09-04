@@ -87,7 +87,7 @@ class RegressionAlgorithm(BasePredictionAlgorithm):
         """
         self.logger.info("Training regression models...")
         
-        if len(data) < 100:
+        if len(data) < 50:
             self.logger.warning("Insufficient data for regression training")
             return
         

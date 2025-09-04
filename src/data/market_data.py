@@ -75,7 +75,7 @@ class MarketDataManager:
         conn.commit()
         conn.close()
     
-    async def get_stock_data(self, symbol: str, days: int = 90, force_refresh: bool = False) -> pd.DataFrame:
+    async def get_stock_data(self, symbol: str, days: int = 90, force_refresh: bool = False, extend_history: bool = True) -> pd.DataFrame:
         """
         Get stock data for a symbol, using cache when possible
         
@@ -86,26 +86,68 @@ class MarketDataManager:
         """
         self.logger.debug(f"Fetching data for {symbol} (days={days}, force_refresh={force_refresh})")
         
-        # Check cache first unless force refresh
-        if not force_refresh:
-            cached_data = await self._get_cached_data(symbol, days)
-            if cached_data is not None and not cached_data.empty:
-                self.logger.debug(f"Using cached data for {symbol}")
-                return cached_data
-        
-        # Fetch from API
-        self.logger.info(f"Fetching fresh data from API for {symbol}")
-        fresh_data = await self._fetch_from_api(symbol, days)
+        # Check if we need to extend history or just get recent data
+        if extend_history:
+            # Get existing data to see what we already have
+            existing_data = await self._get_all_cached_data(symbol)
+            
+            if not existing_data.empty:
+                # Check if recent data is fresh enough
+                latest_timestamp = existing_data.index.max()
+                
+                # Handle timezone-aware vs timezone-naive datetime comparison
+                current_time = datetime.now()
+                latest_dt = latest_timestamp.to_pydatetime()
+                
+                # Make both timezone-naive for comparison
+                if latest_dt.tzinfo is not None:
+                    latest_dt = latest_dt.replace(tzinfo=None)
+                
+                hours_since_update = (current_time - latest_dt).total_seconds() / 3600
+                
+                if hours_since_update < (self.cache_duration / 3600):
+                    self.logger.debug(f"Using cached data for {symbol} (last update: {hours_since_update:.1f}h ago)")
+                    return existing_data.tail(days) if len(existing_data) > days else existing_data
+                
+                # Fetch only new data since last update
+                days_to_fetch = max(7, int(hours_since_update / 24) + 1)  # At least 1 week
+                self.logger.info(f"Extending history for {symbol} - fetching {days_to_fetch} days")
+                fresh_data = await self._fetch_from_api(symbol, days_to_fetch)
+            else:
+                # First time - get full history
+                self.logger.info(f"First time fetching {symbol} - getting {days} days")
+                fresh_data = await self._fetch_from_api(symbol, days)
+        else:
+            # Old behavior - check cache first
+            if not force_refresh:
+                cached_data = await self._get_cached_data(symbol, days)
+                if cached_data is not None and not cached_data.empty:
+                    self.logger.debug(f"Using cached data for {symbol}")
+                    return cached_data
+            
+            # Fetch from API
+            self.logger.info(f"Fetching fresh data from API for {symbol}")
+            fresh_data = await self._fetch_from_api(symbol, days)
         
         if fresh_data is not None and not fresh_data.empty:
             # Store in database
             await self._store_data(symbol, fresh_data)
-            return fresh_data
+            
+            # Return all accumulated data if extending history, or just fresh data
+            if extend_history:
+                all_data = await self._get_all_cached_data(symbol)
+                return all_data.tail(days) if len(all_data) > days else all_data
+            else:
+                return fresh_data
         else:
             # Fallback to cached data if API fails
             self.logger.warning(f"API fetch failed for {symbol}, trying cached data")
-            cached_data = await self._get_cached_data(symbol, days, ignore_cache_time=True)
-            return cached_data if cached_data is not None else pd.DataFrame()
+            if extend_history:
+                cached_data = await self._get_all_cached_data(symbol)
+                return cached_data.tail(days) if len(cached_data) > days else cached_data
+            else:
+                cached_data = await self._get_cached_data(symbol, days, ignore_cache_time=True)
+                return cached_data if cached_data is not None else pd.DataFrame()
     
     async def _get_cached_data(self, symbol: str, days: int, ignore_cache_time: bool = False) -> Optional[pd.DataFrame]:
         """Get cached data from database"""
@@ -159,6 +201,49 @@ class MarketDataManager:
         
         return df
     
+    async def _get_all_cached_data(self, symbol: str) -> pd.DataFrame:
+        """Get all cached data for a symbol (no time limits)"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            # Get asset_id
+            cursor.execute('SELECT asset_id FROM assets WHERE symbol = ?', (symbol,))
+            result = cursor.fetchone()
+            
+            if not result:
+                return pd.DataFrame()
+            
+            asset_id = result[0]
+            
+            # Query all price data
+            query = '''
+            SELECT timestamp, open, high, low, close, volume
+            FROM price_data 
+            WHERE asset_id = ?
+            ORDER BY timestamp ASC
+            '''
+            
+            df = pd.read_sql_query(query, conn, params=(asset_id,))
+            
+            if df.empty:
+                return pd.DataFrame()
+            
+            # Convert timestamp to datetime and set as index
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df.set_index('timestamp', inplace=True)
+            
+            # Convert to standard yfinance format
+            df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+            
+            return df
+            
+        except Exception as e:
+            self.logger.error(f"Error getting all cached data for {symbol}: {e}")
+            return pd.DataFrame()
+        finally:
+            conn.close()
+    
     async def _fetch_from_api(self, symbol: str, days: int) -> Optional[pd.DataFrame]:
         """Fetch data from yfinance API"""
         try:
@@ -171,12 +256,20 @@ class MarketDataManager:
             
             # Fetch data in thread pool to avoid blocking
             ticker = yf.Ticker(symbol)
+            # Use daily data for longer periods, 30m for recent data
+            if days > 60:
+                interval = '1d'  # Daily intervals for longer periods
+                actual_days = min(days, 365)  # Limit to 1 year of daily data
+                start_date = end_date - timedelta(days=actual_days)
+            else:
+                interval = '1h'  # Hourly data for shorter periods (30m has 60-day limit)
+            
             data = await loop.run_in_executor(
                 None,
                 lambda: ticker.history(
                     start=start_date.strftime('%Y-%m-%d'),
                     end=end_date.strftime('%Y-%m-%d'),
-                    interval='30m'  # 30-minute intervals
+                    interval=interval
                 )
             )
             
