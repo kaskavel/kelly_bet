@@ -25,12 +25,10 @@ class PredictionEngine:
         self.logger = logging.getLogger(__name__)
         self.db_path = Path(config['database']['sqlite']['path'])
         
-        # Initialize algorithms
+        # Initialize algorithms and weights
         self.algorithms = {}
-        self._initialize_algorithms()
-        
-        # Algorithm weights (will be updated based on performance)
         self.algorithm_weights = {}
+        self._initialize_algorithms()
         
     def _initialize_algorithms(self):
         """Initialize all prediction algorithms"""
@@ -135,6 +133,9 @@ class PredictionEngine:
             List of prediction dictionaries with ensemble scores
         """
         self.logger.info(f"Generating predictions for {len(market_data)} assets")
+        
+        # Auto-train models on first run if needed
+        await self._auto_train_models(market_data)
         
         predictions = []
         
@@ -312,6 +313,49 @@ class PredictionEngine:
         
         # For now, this is a placeholder
         self.logger.info(f"Updating algorithm performance for {symbol}: outcome={actual_outcome}")
+    
+    async def _auto_train_models(self, market_data: Dict[str, pd.DataFrame]):
+        """Auto-train models if they haven't been trained yet"""
+        untrained_models = []
+        
+        for algo_name, algorithm in self.algorithms.items():
+            if not algorithm.is_trained and algo_name in ['rf', 'lstm', 'regression']:
+                untrained_models.append((algo_name, algorithm))
+        
+        if not untrained_models:
+            return
+        
+        self.logger.info(f"Auto-training {len(untrained_models)} untrained models...")
+        
+        # Get a good training dataset (use data from multiple assets)
+        training_symbols = ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA']  # Use major stocks for training
+        available_training_data = []
+        
+        for symbol in training_symbols:
+            if symbol in market_data and not market_data[symbol].empty:
+                data = market_data[symbol]
+                if len(data) >= 30:  # Reduced requirement - we have ~61 daily records
+                    available_training_data.append(data)
+                    self.logger.info(f"Adding {symbol} ({len(data)} records) for training")
+        
+        if not available_training_data:
+            self.logger.warning("Insufficient data for model training")
+            return
+        
+        # Combine training data
+        combined_training_data = pd.concat(available_training_data, ignore_index=True)
+        
+        # Train each untrained model
+        for algo_name, algorithm in untrained_models:
+            try:
+                self.logger.info(f"Training {algo_name} model...")
+                await algorithm.train(combined_training_data)
+                if algorithm.is_trained:
+                    self.logger.info(f"{algo_name} model trained successfully")
+                else:
+                    self.logger.warning(f"{algo_name} model training failed")
+            except Exception as e:
+                self.logger.error(f"Error training {algo_name}: {e}")
     
     async def cleanup(self):
         """Clean up prediction engine"""

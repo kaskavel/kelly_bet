@@ -78,7 +78,7 @@ class RandomForestAlgorithm(BasePredictionAlgorithm):
         """
         self.logger.info("Training Random Forest model...")
         
-        if len(data) < 100:
+        if len(data) < 50:
             self.logger.warning("Insufficient data for Random Forest training")
             return
         

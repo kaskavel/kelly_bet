@@ -57,7 +57,7 @@ class TradingSystem:
         try:
             while self.running:
                 # Check risk conditions
-                if not self.risk_manager.can_continue_trading():
+                if not await self.risk_manager.can_continue_trading():
                     self.logger.warning("Risk manager paused trading")
                     await asyncio.sleep(300)  # Wait 5 minutes before checking again
                     continue
@@ -189,8 +189,8 @@ class TradingSystem:
         current_price = prediction['current_price']
         
         # Calculate bet size using Kelly
-        bet_size = self.kelly_calc.calculate_bet_size(
-            probability=probability / 100.0,  # Convert to decimal
+        bet_recommendation = self.kelly_calc.calculate_bet_size(
+            probability=probability,
             current_price=current_price,
             available_capital=await self.portfolio.get_available_capital()
         )
@@ -199,12 +199,20 @@ class TradingSystem:
         print(f"Asset: {symbol}")
         print(f"Current Price: ${current_price:.2f}")
         print(f"Win Probability: {probability:.2f}%")
-        print(f"Recommended Bet Size: ${bet_size:.2f}")
+        print(f"Recommended Bet Size: ${bet_recommendation.recommended_amount:.2f}")
+        print(f"Kelly Fraction: {bet_recommendation.fraction_of_capital:.1%}")
+        print(f"Expected Value: {bet_recommendation.expected_value:.3f}")
+        print(f"Confidence: {bet_recommendation.confidence_level}")
+        if bet_recommendation.risk_warning:
+            print(f"⚠️  Warning: {bet_recommendation.risk_warning}")
         
         confirm = input("Proceed with this bet? (y/N): ").strip().lower()
         
         if confirm == 'y':
-            await self._place_bet(prediction)
+            if bet_recommendation.is_favorable and bet_recommendation.recommended_amount > 0:
+                await self._place_bet(prediction)
+            else:
+                print("❌ Bet not favorable - Kelly recommends no bet")
         else:
             print("Bet cancelled")
     
