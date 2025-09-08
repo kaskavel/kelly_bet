@@ -63,9 +63,18 @@ class BetAnalyzer:
             self.config = yaml.safe_load(f)
         
         self.db_path = Path(self.config['database']['sqlite']['path'])
+        
+        # Initialize portfolio manager for performance tracking
+        self.portfolio_manager = None
     
     async def show_bet_history(self, limit: int = 50, status_filter: str = 'all', show_stats: bool = False):
         """Display bet history with optional filtering and statistics"""
+        
+        # Initialize portfolio manager for performance tracking
+        if not self.portfolio_manager:
+            from ..portfolio.manager import PortfolioManager
+            self.portfolio_manager = PortfolioManager(self.config)
+            await self.portfolio_manager.initialize()
         
         # Get bet data
         bet_history = await self._get_bet_history(limit, status_filter)
@@ -79,6 +88,9 @@ class BetAnalyzer:
         # Display header
         print(f"\nBET HISTORY ANALYSIS - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 120)
+        
+        # Show portfolio performance
+        await self._show_portfolio_performance()
         
         if show_stats:
             # Calculate and display comprehensive statistics
@@ -553,3 +565,44 @@ class BetAnalyzer:
             return []
         finally:
             conn.close()
+    
+    async def _show_portfolio_performance(self):
+        """Display portfolio performance summary"""
+        if not self.portfolio_manager:
+            return
+            
+        try:
+            # Refresh portfolio state to get latest cash balance and active bets
+            await self.portfolio_manager._load_portfolio_state()
+            
+            # Get portfolio summary
+            portfolio = await self.portfolio_manager.get_portfolio_summary()
+            
+            # Calculate trading performance correctly
+            initial_capital = self.portfolio_manager.initial_capital
+            
+            # Total P&L should be realized + unrealized (actual trading results)
+            total_trading_pnl = portfolio.realized_pnl + portfolio.unrealized_pnl
+            trading_return_pct = (total_trading_pnl / initial_capital) * 100
+            
+            # Portfolio value comparison (for reference, but not the main metric)
+            portfolio_value_change = portfolio.total_capital - initial_capital
+            portfolio_change_pct = (portfolio_value_change / initial_capital) * 100
+            
+            print(f"\n{'='*60}")
+            print("PORTFOLIO PERFORMANCE")
+            print(f"{'='*60}")
+            print(f"Initial Capital: ${initial_capital:,.2f}")
+            print(f"Current Value:   ${portfolio.total_capital:,.2f}")
+            print(f"Cash Balance:    ${portfolio.cash_balance:,.2f}")
+            print(f"Active Positions: ${portfolio.active_bets_value:,.2f}")
+            print(f"")
+            print(f"TRADING PERFORMANCE:")
+            print(f"Realized P&L:    ${portfolio.realized_pnl:+,.2f}")
+            print(f"Unrealized P&L:  ${portfolio.unrealized_pnl:+,.2f}")
+            print(f"Total Trading P&L: ${total_trading_pnl:+,.2f} ({trading_return_pct:+.2f}%)")
+            print(f"")
+            print(f"Portfolio Change: ${portfolio_value_change:+,.2f} ({portfolio_change_pct:+.2f}%)")
+            
+        except Exception as e:
+            print(f"Error showing portfolio performance: {e}")

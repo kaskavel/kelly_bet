@@ -189,6 +189,11 @@ class PortfolioManager:
             for row in rows:
                 bet_data = dict(zip(columns, row))
                 bet = self._row_to_bet(bet_data)
+                
+                # Calculate current value and unrealized PnL
+                bet.current_value = bet.shares * bet.current_price
+                bet.unrealized_pnl = bet.current_value - bet.amount
+                
                 self.active_bets[bet.bet_id] = bet
             
             self.logger.info(f"Loaded portfolio state: ${self.cash_balance:.2f} cash, "
@@ -606,6 +611,15 @@ class PortfolioManager:
         cursor = conn.cursor()
         
         try:
+            # FIRST: Refresh cash balance from database to ensure accuracy
+            cursor.execute('''
+            SELECT balance_after FROM cash_transactions 
+            ORDER BY timestamp DESC LIMIT 1
+            ''')
+            balance_result = cursor.fetchone()
+            if balance_result:
+                self.cash_balance = balance_result[0]
+            
             # First get the bet details
             cursor.execute('''
             SELECT symbol, amount, shares, entry_price, win_threshold, loss_threshold, status
@@ -622,22 +636,19 @@ class PortfolioManager:
                 self.logger.warning(f"Bet {bet_id} is already closed (status: {current_status})")
                 return
             
-            # Determine if this is a win or loss
+            # Calculate current value and P&L
             current_value = shares * current_price
-            realized_pnl = current_value - amount  # Simple P&L calculation
+            exit_fee = amount * (self.trading_fee_percentage / 100)
+            realized_pnl = current_value - amount - exit_fee  # P&L after fees
             
-            # Determine new status based on thresholds
+            # Determine new status based on thresholds first, then P&L
             if current_price >= win_threshold:
                 new_status = BetStatus.WON
             elif current_price <= loss_threshold:
                 new_status = BetStatus.LOST
             else:
-                # This shouldn't happen in normal monitoring, but handle it
+                # Between thresholds - use final P&L (after fees) to determine status
                 new_status = BetStatus.WON if realized_pnl > 0 else BetStatus.LOST
-            
-            # Apply trading fees for exit
-            exit_fee = amount * (self.trading_fee_percentage / 100)
-            realized_pnl -= exit_fee  # Subtract exit fee from P&L
             
             # Update the bet in database
             cursor.execute('''
@@ -647,8 +658,6 @@ class PortfolioManager:
                 exit_time = ?,
                 exit_price = ?,
                 realized_pnl = ?,
-                pnl = ?,
-                exit_fee = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE bet_id = ?
             ''', (
@@ -657,8 +666,6 @@ class PortfolioManager:
                 datetime.now().isoformat(),
                 current_price,
                 realized_pnl,
-                realized_pnl,  # Also store in pnl column for compatibility
-                exit_fee,
                 bet_id
             ))
             
