@@ -34,6 +34,11 @@ def parse_args():
         action='store_true',
         help='Show betting history and performance'
     )
+    action_group.add_argument(
+        '--dashboard',
+        action='store_true',
+        help='Launch web-based trading dashboard (recommended)'
+    )
     
     # Trading system options
     parser.add_argument(
@@ -95,7 +100,9 @@ async def main():
     logger = logging.getLogger(__name__)
     
     # Handle different actions
-    if args.livebets:
+    if args.dashboard:
+        await handle_dashboard_command(args, logger)
+    elif args.livebets:
         await handle_livebets_command(args, logger)
     elif args.bets:
         await handle_bets_command(args, logger)
@@ -104,6 +111,7 @@ async def main():
     else:
         print("Please specify an action. Use --help for available options.")
         print("\nExample usage:")
+        print("  python main.py --dashboard                      # Launch web UI (recommended)")
         print("  python main.py --mode manual")
         print("  python main.py --mode automated --threshold 65")
         print("  python main.py --livebets")
@@ -165,6 +173,28 @@ async def handle_bets_command(args, logger):
         
     except Exception as e:
         logger.error(f"Error in bet analysis: {e}", exc_info=True)
+        sys.exit(1)
+
+
+async def handle_dashboard_command(args, logger):
+    """Handle dashboard launch"""
+    import subprocess
+    import os
+    
+    logger.info("Launching Kelly Trading Dashboard...")
+    
+    try:
+        # Get project directory
+        project_dir = os.path.dirname(os.path.abspath(__file__))
+        dashboard_script = os.path.join(project_dir, "run_dashboard.py")
+        
+        # Launch dashboard
+        subprocess.run([sys.executable, dashboard_script], check=True)
+        
+    except KeyboardInterrupt:
+        logger.info("Dashboard stopped by user")
+    except Exception as e:
+        logger.error(f"Error launching dashboard: {e}", exc_info=True)
         sys.exit(1)
 
 
