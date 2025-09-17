@@ -46,9 +46,17 @@ class BetMonitor:
         # Initialize market data manager for current prices
         self.market_data = MarketDataManager(self.config)
         
+        # Initialize portfolio manager for performance tracking
+        self.portfolio_manager = None
+        
     async def show_live_bets(self, refresh_interval: int = 0):
         """Display live bets with optional auto-refresh and automatic settlement"""
         await self.market_data.initialize()
+        
+        # Initialize portfolio manager for performance tracking
+        if not self.portfolio_manager:
+            self.portfolio_manager = PortfolioManager(self.config)
+            await self.portfolio_manager.initialize()
         
         # Default to 5-minute monitoring if no interval specified
         if refresh_interval == 0:
@@ -110,6 +118,9 @@ class BetMonitor:
         
         # Detailed bet table
         self._print_bet_table(live_bets)
+        
+        # Portfolio performance summary
+        await self._show_portfolio_performance()
         
         # Risk warnings
         await self._show_risk_warnings(live_bets)
@@ -380,8 +391,51 @@ class BetMonitor:
         finally:
             conn.close()
     
+    async def _show_portfolio_performance(self):
+        """Display portfolio performance summary"""
+        if not self.portfolio_manager:
+            return
+            
+        try:
+            # Refresh portfolio state to get latest cash balance and active bets
+            await self.portfolio_manager._load_portfolio_state()
+            
+            # Get portfolio summary
+            portfolio = await self.portfolio_manager.get_portfolio_summary()
+            
+            # Calculate trading performance correctly
+            initial_capital = self.portfolio_manager.initial_capital
+            
+            # Total P&L should be realized + unrealized (actual trading results)
+            total_trading_pnl = portfolio.realized_pnl + portfolio.unrealized_pnl
+            trading_return_pct = (total_trading_pnl / initial_capital) * 100
+            
+            # Portfolio value comparison (for reference, but not the main metric)
+            portfolio_value_change = portfolio.total_capital - initial_capital
+            portfolio_change_pct = (portfolio_value_change / initial_capital) * 100
+            
+            print(f"\n{'='*60}")
+            print("PORTFOLIO PERFORMANCE")
+            print(f"{'='*60}")
+            print(f"Initial Capital: ${initial_capital:,.2f}")
+            print(f"Current Value:   ${portfolio.total_capital:,.2f}")
+            print(f"Cash Balance:    ${portfolio.cash_balance:,.2f}")
+            print(f"Active Positions: ${portfolio.active_bets_value:,.2f}")
+            print(f"")
+            print(f"TRADING PERFORMANCE:")
+            print(f"Realized P&L:    ${portfolio.realized_pnl:+,.2f}")
+            print(f"Unrealized P&L:  ${portfolio.unrealized_pnl:+,.2f}")
+            print(f"Total Trading P&L: ${total_trading_pnl:+,.2f} ({trading_return_pct:+.2f}%)")
+            print(f"")
+            print(f"Portfolio Change: ${portfolio_value_change:+,.2f} ({portfolio_change_pct:+.2f}%)")
+            
+        except Exception as e:
+            self.logger.error(f"Error showing portfolio performance: {e}")
+    
     async def _cleanup(self):
         """Cleanup resources"""
         if hasattr(self, 'market_data'):
             await self.market_data.cleanup()
+        if hasattr(self, 'portfolio_manager') and self.portfolio_manager:
+            await self.portfolio_manager.cleanup()
         self.logger.info("Bet monitor cleanup complete")
