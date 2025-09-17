@@ -35,45 +35,50 @@ class MarketDataManager:
     
     async def _create_tables(self):
         """Create database tables for market data"""
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=60.0)
+        conn.execute('PRAGMA busy_timeout = 60000')
+        conn.execute('PRAGMA journal_mode = WAL')
+        conn.execute('PRAGMA synchronous = NORMAL')
         cursor = conn.cursor()
         
-        # Assets table
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS assets (
-            asset_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT UNIQUE NOT NULL,
-            asset_type TEXT NOT NULL,
-            name TEXT,
-            sector TEXT,
-            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
-        
-        # Price data table (OHLCV)
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS price_data (
-            price_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            asset_id INTEGER,
-            timestamp TIMESTAMP NOT NULL,
-            open REAL NOT NULL,
-            high REAL NOT NULL,
-            low REAL NOT NULL,
-            close REAL NOT NULL,
-            volume INTEGER,
-            interval TEXT DEFAULT '30min',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (asset_id) REFERENCES assets (asset_id),
-            UNIQUE(asset_id, timestamp, interval)
-        )
-        ''')
-        
-        # Create indexes for faster queries
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_price_data_timestamp ON price_data(timestamp)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_price_data_symbol ON price_data(asset_id, timestamp)')
-        
-        conn.commit()
-        conn.close()
+        try:
+            # Assets table
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS assets (
+                asset_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT UNIQUE NOT NULL,
+                asset_type TEXT NOT NULL,
+                name TEXT,
+                sector TEXT,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+            
+            # Price data table (OHLCV)
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS price_data (
+                price_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                asset_id INTEGER,
+                timestamp TIMESTAMP NOT NULL,
+                open REAL NOT NULL,
+                high REAL NOT NULL,
+                low REAL NOT NULL,
+                close REAL NOT NULL,
+                volume INTEGER,
+                interval TEXT DEFAULT '30min',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (asset_id) REFERENCES assets (asset_id),
+                UNIQUE(asset_id, timestamp, interval)
+            )
+            ''')
+            
+            # Create indexes for faster queries
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_price_data_timestamp ON price_data(timestamp)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_price_data_symbol ON price_data(asset_id, timestamp)')
+            
+            conn.commit()
+        finally:
+            conn.close()
     
     async def get_stock_data(self, symbol: str, days: int = 90, force_refresh: bool = False, extend_history: bool = True) -> pd.DataFrame:
         """
@@ -151,62 +156,71 @@ class MarketDataManager:
     
     async def _get_cached_data(self, symbol: str, days: int, ignore_cache_time: bool = False) -> Optional[pd.DataFrame]:
         """Get cached data from database"""
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=60.0)
+        conn.execute('PRAGMA busy_timeout = 60000')
+        conn.execute('PRAGMA journal_mode = WAL')
+        conn.execute('PRAGMA synchronous = NORMAL')
         
-        # Get asset_id
-        cursor = conn.cursor()
-        cursor.execute('SELECT asset_id FROM assets WHERE symbol = ?', (symbol,))
-        result = cursor.fetchone()
-        
-        if not result:
+        try:
+            # Get asset_id
+            cursor = conn.cursor()
+            cursor.execute('SELECT asset_id FROM assets WHERE symbol = ?', (symbol,))
+            result = cursor.fetchone()
+            
+            if not result:
+                return None
+            
+            asset_id = result[0]
+            
+            # Calculate date threshold
+            if not ignore_cache_time:
+                cache_threshold = datetime.now() - timedelta(seconds=self.cache_duration)
+            else:
+                cache_threshold = datetime.now() - timedelta(days=365)  # Very old threshold for fallback
+            
+            start_date = datetime.now() - timedelta(days=days)
+            
+            # Query price data
+            query = '''
+            SELECT timestamp, open, high, low, close, volume
+            FROM price_data 
+            WHERE asset_id = ? 
+              AND timestamp >= ? 
+              AND created_at >= ?
+            ORDER BY timestamp ASC
+            '''
+            
+            df = pd.read_sql_query(
+                query, 
+                conn, 
+                params=(asset_id, start_date.isoformat(), cache_threshold.isoformat())
+            )
+            
+            if df.empty:
+                return None
+            
+            # Convert timestamp to datetime and set as index
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df.set_index('timestamp', inplace=True)
+            
+            # Convert to standard yfinance format
+            df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+            
+            return df
+            
+        finally:
             conn.close()
-            return None
-        
-        asset_id = result[0]
-        
-        # Calculate date threshold
-        if not ignore_cache_time:
-            cache_threshold = datetime.now() - timedelta(seconds=self.cache_duration)
-        else:
-            cache_threshold = datetime.now() - timedelta(days=365)  # Very old threshold for fallback
-        
-        start_date = datetime.now() - timedelta(days=days)
-        
-        # Query price data
-        query = '''
-        SELECT timestamp, open, high, low, close, volume
-        FROM price_data 
-        WHERE asset_id = ? 
-          AND timestamp >= ? 
-          AND created_at >= ?
-        ORDER BY timestamp ASC
-        '''
-        
-        df = pd.read_sql_query(
-            query, 
-            conn, 
-            params=(asset_id, start_date.isoformat(), cache_threshold.isoformat())
-        )
-        conn.close()
-        
-        if df.empty:
-            return None
-        
-        # Convert timestamp to datetime and set as index
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df.set_index('timestamp', inplace=True)
-        
-        # Convert to standard yfinance format
-        df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-        
-        return df
     
     async def _get_all_cached_data(self, symbol: str) -> pd.DataFrame:
         """Get all cached data for a symbol (no time limits)"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        conn = sqlite3.connect(self.db_path, timeout=60.0)
+        conn.execute('PRAGMA busy_timeout = 60000')
+        conn.execute('PRAGMA journal_mode = WAL')
+        conn.execute('PRAGMA synchronous = NORMAL')
         
         try:
+            cursor = conn.cursor()
+            
             # Get asset_id
             cursor.execute('SELECT asset_id FROM assets WHERE symbol = ?', (symbol,))
             result = cursor.fetchone()
@@ -288,57 +302,72 @@ class MarketDataManager:
             return None
     
     async def _store_data(self, symbol: str, data: pd.DataFrame):
-        """Store data in database"""
+        """Store data in database with retry logic"""
         if data.empty:
             return
         
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        try:
-            # Get or create asset
-            cursor.execute('SELECT asset_id FROM assets WHERE symbol = ?', (symbol,))
-            result = cursor.fetchone()
-            
-            if result:
-                asset_id = result[0]
-                # Update last_updated
-                cursor.execute(
-                    'UPDATE assets SET last_updated = CURRENT_TIMESTAMP WHERE asset_id = ?',
-                    (asset_id,)
-                )
-            else:
-                # Create new asset
-                cursor.execute(
-                    'INSERT INTO assets (symbol, asset_type) VALUES (?, ?)',
-                    (symbol, 'stock')
-                )
-                asset_id = cursor.lastrowid
-            
-            # Store price data
-            for timestamp, row in data.iterrows():
-                cursor.execute('''
-                INSERT OR REPLACE INTO price_data 
-                (asset_id, timestamp, open, high, low, close, volume)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    asset_id,
-                    timestamp.isoformat(),
-                    float(row['Open']),
-                    float(row['High']),
-                    float(row['Low']),
-                    float(row['Close']),
-                    int(row['Volume']) if pd.notna(row['Volume']) else 0
-                ))
-            
-            conn.commit()
-            self.logger.debug(f"Stored {len(data)} records for {symbol}")
-            
-        except Exception as e:
-            self.logger.error(f"Error storing data for {symbol}: {e}")
-            conn.rollback()
-        finally:
-            conn.close()
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                # More aggressive connection settings
+                conn = sqlite3.connect(self.db_path, timeout=60.0)
+                conn.execute('PRAGMA busy_timeout = 60000')
+                conn.execute('PRAGMA journal_mode = WAL')
+                conn.execute('PRAGMA synchronous = NORMAL')
+                cursor = conn.cursor()
+                
+                try:
+                    # Get or create asset
+                    cursor.execute('SELECT asset_id FROM assets WHERE symbol = ?', (symbol,))
+                    result = cursor.fetchone()
+                    
+                    if result:
+                        asset_id = result[0]
+                        # Update last_updated
+                        cursor.execute(
+                            'UPDATE assets SET last_updated = CURRENT_TIMESTAMP WHERE asset_id = ?',
+                            (asset_id,)
+                        )
+                    else:
+                        # Create new asset
+                        cursor.execute(
+                            'INSERT INTO assets (symbol, asset_type) VALUES (?, ?)',
+                            (symbol, 'stock')
+                        )
+                        asset_id = cursor.lastrowid
+                    
+                    # Store price data
+                    for timestamp, row in data.iterrows():
+                        cursor.execute('''
+                        INSERT OR REPLACE INTO price_data 
+                        (asset_id, timestamp, open, high, low, close, volume)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ''', (
+                            asset_id,
+                            timestamp.isoformat(),
+                            float(row['Open']),
+                            float(row['High']),
+                            float(row['Low']),
+                            float(row['Close']),
+                            int(row['Volume']) if pd.notna(row['Volume']) else 0
+                        ))
+                    
+                    conn.commit()
+                    self.logger.debug(f"Stored {len(data)} records for {symbol}")
+                    break  # Success, exit retry loop
+                    
+                except Exception as e:
+                    conn.rollback()
+                    raise e
+                finally:
+                    conn.close()
+                    
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    self.logger.warning(f"Database error storing {symbol} (attempt {attempt + 1}/{max_retries}): {e}")
+                    await asyncio.sleep(0.5 * (2 ** attempt))  # Exponential backoff: 0.5s, 1s, 2s, 4s
+                else:
+                    self.logger.error(f"Failed to store data for {symbol} after {max_retries} attempts: {e}")
     
     async def get_latest_data(self, assets: List[Dict]) -> Dict[str, pd.DataFrame]:
         """Get latest data for multiple assets"""

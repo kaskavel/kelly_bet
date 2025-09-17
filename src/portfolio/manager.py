@@ -622,7 +622,7 @@ class PortfolioManager:
             
             # First get the bet details
             cursor.execute('''
-            SELECT symbol, amount, shares, entry_price, win_threshold, loss_threshold, status
+            SELECT symbol, amount, shares, entry_price, win_price, loss_price, status
             FROM bets WHERE bet_id = ?
             ''', (bet_id,))
             
@@ -630,7 +630,7 @@ class PortfolioManager:
             if not bet_row:
                 raise Exception(f"Bet {bet_id} not found")
             
-            symbol, amount, shares, entry_price, win_threshold, loss_threshold, current_status = bet_row
+            symbol, amount, shares, entry_price, win_price, loss_price, current_status = bet_row
             
             if current_status != BetStatus.ALIVE.value:
                 self.logger.warning(f"Bet {bet_id} is already closed (status: {current_status})")
@@ -642,9 +642,9 @@ class PortfolioManager:
             realized_pnl = current_value - amount - exit_fee  # P&L after fees
             
             # Determine new status based on thresholds first, then P&L
-            if current_price >= win_threshold:
+            if current_price >= win_price:
                 new_status = BetStatus.WON
-            elif current_price <= loss_threshold:
+            elif current_price <= loss_price:
                 new_status = BetStatus.LOST
             else:
                 # Between thresholds - use final P&L (after fees) to determine status

@@ -107,8 +107,16 @@ class TradingSystem:
         assets = await self.asset_selector.get_all_assets()
         market_data = await self.market_data.get_latest_data(assets)
         
+        # Create asset type mapping
+        asset_type_map = {asset['symbol']: asset['type'] for asset in assets}
+        
         # Generate predictions
         predictions = await self.predictor.predict_all(market_data)
+        
+        # Enrich predictions with asset type information
+        for prediction in predictions:
+            symbol = prediction['symbol']
+            prediction['asset_type'] = asset_type_map.get(symbol, 'unknown')
         
         # Filter and rank by probability
         valid_predictions = [
@@ -122,10 +130,24 @@ class TradingSystem:
         self.logger.info(f"Generated {len(valid_predictions)} valid predictions")
         return valid_predictions
     
+    async def _get_active_bet_symbols(self) -> List[str]:
+        """Get list of symbols that currently have active bets"""
+        try:
+            alive_bets = await self.portfolio.get_alive_bets()
+            active_symbols = [bet.symbol for bet in alive_bets]
+            self.logger.debug(f"Active bet symbols: {active_symbols}")
+            return active_symbols
+        except Exception as e:
+            self.logger.error(f"Error getting active bet symbols: {e}")
+            return []
+    
     async def _handle_manual_mode(self, predictions: List[Dict]):
         """Handle manual mode interaction"""
         top_n = self.config['trading']['top_n_display']
         top_predictions = predictions[:top_n]
+        
+        # Get active bet symbols to show warnings
+        active_symbols = await self._get_active_bet_symbols()
         
         self.logger.info(f"Top {len(top_predictions)} investment opportunities:")
         
@@ -135,9 +157,20 @@ class TradingSystem:
         print(f"{'='*60}")
         
         for i, pred in enumerate(top_predictions, 1):
+            duplicate_warning = ""
+            if pred['symbol'] in active_symbols:
+                duplicate_warning = " [ACTIVE BET]"
+            
+            asset_type = pred.get('asset_type', 'unknown').upper()
+            
             print(f"{i:2d}. {pred['symbol']:10s} | "
+                  f"{asset_type:6s} | "
                   f"Probability: {pred['probability']:6.2f}% | "
-                  f"Price: ${pred['current_price']:8.2f}")
+                  f"Price: ${pred['current_price']:8.2f}{duplicate_warning}")
+        
+        if active_symbols:
+            print(f"\nNOTE: [ACTIVE BET] indicates you already have an active bet for this symbol.")
+            print(f"Active bets: {', '.join(active_symbols)}")
         
         print(f"{'='*60}")
         
@@ -153,6 +186,17 @@ class TradingSystem:
             if 0 <= bet_index < len(top_predictions):
                 selected_prediction = top_predictions[bet_index]
                 
+                # Check for duplicate bet and confirm
+                if selected_prediction['symbol'] in active_symbols:
+                    print(f"\n⚠️  WARNING: You already have an active bet for {selected_prediction['symbol']}")
+                    confirm_duplicate = input("Do you want to place another bet on the same symbol? (y/N): ").strip().lower()
+                    
+                    if confirm_duplicate != 'y':
+                        print("Bet cancelled - avoiding duplicate position")
+                        return
+                    
+                    print("Proceeding with duplicate bet as requested...")
+                
                 # Show bet details and confirm
                 await self._confirm_and_place_bet(selected_prediction)
             else:
@@ -167,23 +211,70 @@ class TradingSystem:
             self.logger.info("No predictions available")
             return
         
-        best_prediction = predictions[0]
-        best_prob = best_prediction['probability']
+        # Display top 10 predictions for reference (like manual mode)
+        top_n = self.config['trading']['top_n_display']
+        top_predictions = predictions[:top_n]
         
-        self.logger.info(f"Best opportunity: {best_prediction['symbol']} "
-                        f"with {best_prob:.2f}% probability")
+        print(f"\n{'='*70}")
+        print("TOP INVESTMENT OPPORTUNITIES (AUTOMATED MODE)")
+        print(f"{'='*70}")
+        
+        for i, pred in enumerate(top_predictions, 1):
+            asset_type = pred.get('asset_type', 'unknown').upper()
+            print(f"{i:2d}. {pred['symbol']:10s} | "
+                  f"{asset_type:6s} | "
+                  f"Probability: {pred['probability']:6.2f}% | "
+                  f"Price: ${pred['current_price']:8.2f}")
+        
+        print(f"{'='*70}")
+        
+        # Get active bet symbols to prevent duplicates
+        active_symbols = await self._get_active_bet_symbols()
+        
+        # Filter out predictions for symbols with active bets
+        available_predictions = [
+            p for p in predictions 
+            if p['symbol'] not in active_symbols
+        ]
+        
+        if not available_predictions:
+            if active_symbols:
+                self.logger.info(f"All top predictions have active bets ({len(active_symbols)} active). "
+                               f"Active symbols: {', '.join(active_symbols)}")
+                print(f"\nAll top predictions have active bets. Active symbols: {', '.join(active_symbols)}")
+            else:
+                self.logger.info("No predictions available")
+            return
+        
+        best_prediction = available_predictions[0]
+        best_prob = best_prediction['probability']
+        best_asset_type = best_prediction.get('asset_type', 'unknown').upper()
+        
+        if active_symbols:
+            self.logger.info(f"Best opportunity (excluding {len(active_symbols)} active bets): "
+                           f"{best_prediction['symbol']} ({best_asset_type}) with {best_prob:.2f}% probability")
+            print(f"\nBest available opportunity (excluding {len(active_symbols)} active bets):")
+        else:
+            self.logger.info(f"Best opportunity: {best_prediction['symbol']} ({best_asset_type}) "
+                           f"with {best_prob:.2f}% probability")
+            print(f"\nBest opportunity:")
+        
+        print(f">>> {best_prediction['symbol']} ({best_asset_type}) - {best_prob:.2f}% probability")
         
         # Check thresholds
         if best_prob < 50.0:
             self.logger.info("Best probability <50%, no bets placed")
+            print(f"Probability {best_prob:.2f}% < 50% minimum - no bet placed")
             return
         
         if best_prob >= self.auto_threshold:
             self.logger.info(f"Probability {best_prob:.2f}% >= threshold {self.auto_threshold}%, "
                            f"placing automatic bet")
+            print(f"Probability {best_prob:.2f}% >= threshold {self.auto_threshold}% - placing automatic bet...")
             await self._place_bet(best_prediction)
         else:
             self.logger.info(f"Best probability {best_prob:.2f}% below threshold {self.auto_threshold}%")
+            print(f"Probability {best_prob:.2f}% < threshold {self.auto_threshold}% - no bet placed")
     
     async def _confirm_and_place_bet(self, prediction: Dict):
         """Confirm bet with user and place if approved"""
@@ -321,12 +412,12 @@ class TradingSystem:
                 # Calculate current return
                 if bet.bet_type == 'long':
                     current_return_pct = ((current_price - bet.entry_price) / bet.entry_price) * 100
-                    hit_win_threshold = current_price >= bet.win_threshold
-                    hit_loss_threshold = current_price <= bet.loss_threshold
+                    hit_win_threshold = current_price >= bet.win_price
+                    hit_loss_threshold = current_price <= bet.loss_price
                 else:  # short
                     current_return_pct = ((bet.entry_price - current_price) / bet.entry_price) * 100
-                    hit_win_threshold = current_price <= bet.win_threshold
-                    hit_loss_threshold = current_price >= bet.loss_threshold
+                    hit_win_threshold = current_price <= bet.win_price
+                    hit_loss_threshold = current_price >= bet.loss_price
                 
                 self.logger.debug(f"Bet {bet.bet_id} ({bet.symbol}): Entry=${bet.entry_price:.2f}, "
                                 f"Current=${current_price:.2f}, Return={current_return_pct:+.2f}%")
@@ -337,10 +428,10 @@ class TradingSystem:
                 
                 if hit_win_threshold:
                     should_close = True
-                    close_reason = f"WIN THRESHOLD HIT: {current_return_pct:+.2f}% (target: {((bet.win_threshold/bet.entry_price - 1) * 100):+.2f}%)"
+                    close_reason = f"WIN THRESHOLD HIT: {current_return_pct:+.2f}% (target: {((bet.win_price/bet.entry_price - 1) * 100):+.2f}%)"
                 elif hit_loss_threshold:
                     should_close = True
-                    close_reason = f"LOSS THRESHOLD HIT: {current_return_pct:+.2f}% (stop: {((bet.loss_threshold/bet.entry_price - 1) * 100):+.2f}%)"
+                    close_reason = f"LOSS THRESHOLD HIT: {current_return_pct:+.2f}% (stop: {((bet.loss_price/bet.entry_price - 1) * 100):+.2f}%)"
                 
                 if should_close:
                     self.logger.info(f"CLOSING POSITION - {bet.symbol}: {close_reason}")
