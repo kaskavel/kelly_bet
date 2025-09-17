@@ -307,7 +307,7 @@ class BetMonitor:
                 # Calculate current return
                 current_return_pct = ((current_price - bet.entry_price) / bet.entry_price) * 100
                 
-                # Check thresholds (assuming long positions)
+                # Check thresholds (assuming long positions)  
                 hit_win_threshold = current_price >= bet.win_threshold
                 hit_loss_threshold = current_price <= bet.loss_threshold
                 
