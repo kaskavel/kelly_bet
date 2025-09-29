@@ -5,7 +5,7 @@ trading:
   win_threshold: 5.0  # Profit target percentage
   loss_threshold: 3.0  # Stop loss percentage
   kelly_fraction: 0.25  # Conservative Kelly multiplier
-  max_concurrent_bets: 10
+  max_concurrent_bets: 20
   initial_capital: 10000.0  # Starting capital
   min_bet_amount: 100.0     # Minimum bet size
   max_bet_amount: 10000.0   # Maximum bet size  

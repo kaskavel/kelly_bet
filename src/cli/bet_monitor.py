@@ -107,11 +107,18 @@ class BetMonitor:
         print(f"\nLIVE BETS MONITOR - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 120)
         
-        # Summary stats
-        total_amount = sum(bet.amount for bet in live_bets)
-        total_current_value = sum(bet.amount * (1 + bet.current_return_pct/100) for bet in live_bets)
-        unrealized_pnl = total_current_value - total_amount
-        
+        # Summary stats - use PortfolioManager's authoritative calculation
+        if self.portfolio_manager:
+            portfolio_summary = await self.portfolio_manager.get_portfolio_summary()
+            total_amount = portfolio_summary.total_invested
+            total_current_value = portfolio_summary.active_bets_value
+            unrealized_pnl = portfolio_summary.unrealized_pnl
+        else:
+            # Fallback to local calculation if portfolio manager not available
+            total_amount = sum(bet.amount for bet in live_bets)
+            total_current_value = sum(bet.amount * (1 + bet.current_return_pct/100) for bet in live_bets)
+            unrealized_pnl = total_current_value - total_amount
+
         print(f"Active Bets: {len(live_bets)} | Total Amount: ${total_amount:,.2f} | "
               f"Current Value: ${total_current_value:,.2f} | Unrealized P&L: ${unrealized_pnl:+,.2f}")
         print()
