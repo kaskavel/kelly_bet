@@ -353,3 +353,1509 @@ n
 2025-09-17 16:41:08,957 - src.portfolio.manager - INFO - Portfolio manager cleanup complete
 2025-09-17 16:41:08,957 - src.core.trading_system - INFO - Cleanup complete
 2025-09-17 16:41:08,957 - __main__ - INFO - System shutdown complete
+2025-09-17 16:55:39,025 - __main__ - INFO - Launching Kelly Trading Dashboard...
+2025-09-17 16:55:39,219 - __main__ - ERROR - Error launching dashboard: Command '['C:\\Users\\kkaskavelis\\repos\\kelly_bet\\.venv\\Scripts\\python.exe', 'C:\\Users\\kkaskavelis\\repos\\kelly_bet\\run_dashboard.py']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "C:\Users\kkaskavelis\repos\kelly_bet\main.py", line 192, in handle_dashboard_command
+    subprocess.run([sys.executable, dashboard_script], check=True)
+  File "C:\Users\kkaskavelis\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['C:\\Users\\kkaskavelis\\repos\\kelly_bet\\.venv\\Scripts\\python.exe', 'C:\\Users\\kkaskavelis\\repos\\kelly_bet\\run_dashboard.py']' returned non-zero exit status 1.
+2025-09-17 16:57:51,069 - __main__ - INFO - Launching Kelly Trading Dashboard...
+2025-09-17 17:02:46,259 - __main__ - INFO - Launching Kelly Trading Dashboard...
+2025-09-17 17:02:47,539 - __main__ - ERROR - Error launching dashboard: Command '['C:\\Users\\kkaskavelis\\repos\\kelly_bet\\.venv\\Scripts\\python.exe', 'C:\\Users\\kkaskavelis\\repos\\kelly_bet\\run_dashboard.py']' returned non-zero exit status 1.
+Traceback (most recent call last):
+  File "C:\Users\kkaskavelis\repos\kelly_bet\main.py", line 192, in handle_dashboard_command
+    subprocess.run([sys.executable, dashboard_script], check=True)
+  File "C:\Users\kkaskavelis\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['C:\\Users\\kkaskavelis\\repos\\kelly_bet\\.venv\\Scripts\\python.exe', 'C:\\Users\\kkaskavelis\\repos\\kelly_bet\\run_dashboard.py']' returned non-zero exit status 1.
+2025-09-17 17:15:18,775 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-17 17:15:18,779 - src.data.market_data - INFO - Market data manager initialized
+2025-09-17 17:15:18,779 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-17 17:15:18,784 - src.portfolio.manager - INFO - Loaded portfolio state: $3752.78 cash, 10 active bets
+2025-09-17 17:15:18,790 - src.portfolio.manager - INFO - Portfolio initialized: $3752.78 cash, 10 active bets
+2025-09-17 17:15:18,794 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-17 17:15:18,829 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-17 17:15:24,717 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-17 17:15:24,754 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-17 17:15:24,879 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-17 17:15:24,923 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-17 17:15:25,029 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-17 17:15:25,060 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-17 17:15:25,193 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-17 17:15:25,242 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-17 17:15:25,409 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-17 17:15:25,463 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-17 17:15:25,579 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-17 17:15:25,619 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-17 17:15:25,725 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-17 17:15:25,770 - src.data.market_data - INFO - Extending history for PG - fetching 7 days
+2025-09-17 17:15:25,934 - src.data.market_data - INFO - Fetched 35 records for PG from API
+2025-09-17 17:15:25,960 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-17 17:15:26,070 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-17 17:15:26,110 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-17 17:15:26,240 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-17 17:15:26,281 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-17 17:15:26,305 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-17 17:15:26,339 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-17 17:15:26,349 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-17 17:15:26,390 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-17 17:15:26,429 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-17 17:15:26,469 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-17 17:15:26,490 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-17 17:15:26,532 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-17 17:15:26,548 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-17 17:15:26,589 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-17 17:15:26,599 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-17 17:15:26,639 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-17 17:15:26,661 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-17 17:15:26,709 - src.data.market_data - INFO - Extending history for PG - fetching 7 days
+2025-09-17 17:15:26,739 - src.data.market_data - INFO - Fetched 35 records for PG from API
+2025-09-17 17:15:26,782 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-17 17:15:26,811 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-17 17:15:26,850 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-17 17:15:26,877 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-17 17:15:26,899 - src.portfolio.manager - INFO - Loaded portfolio state: $3752.78 cash, 10 active bets
+2025-09-17 17:16:16,920 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-17 17:16:16,940 - src.data.market_data - INFO - Market data manager initialized
+2025-09-17 17:16:16,940 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-17 17:16:16,945 - src.portfolio.manager - INFO - Loaded portfolio state: $3752.78 cash, 10 active bets
+2025-09-17 17:16:16,945 - src.portfolio.manager - INFO - Portfolio initialized: $3752.78 cash, 10 active bets
+2025-09-17 17:16:16,949 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-17 17:16:17,010 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-17 17:16:19,020 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-17 17:16:19,050 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-17 17:16:19,150 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-17 17:16:19,179 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-17 17:16:19,274 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-17 17:16:19,302 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-17 17:16:19,400 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-17 17:16:19,433 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-17 17:16:19,541 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-17 17:16:19,574 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-17 17:16:19,670 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-17 17:16:19,699 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-17 17:16:19,800 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-17 17:16:19,830 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-17 17:16:19,945 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-17 17:16:19,973 - src.data.market_data - INFO - Extending history for PG - fetching 7 days
+2025-09-17 17:16:20,090 - src.data.market_data - INFO - Fetched 35 records for PG from API
+2025-09-17 17:16:20,120 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-17 17:16:20,220 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-17 17:16:20,257 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-17 17:16:20,264 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-17 17:16:20,290 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-17 17:16:20,305 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-17 17:16:20,337 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-17 17:16:20,345 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-17 17:16:20,379 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-17 17:16:20,397 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-17 17:16:20,423 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-17 17:16:20,432 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-17 17:16:20,449 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-17 17:16:20,471 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-17 17:16:20,500 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-17 17:16:20,512 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-17 17:16:20,544 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-17 17:16:20,555 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-17 17:16:20,579 - src.data.market_data - INFO - Extending history for PG - fetching 7 days
+2025-09-17 17:16:20,591 - src.data.market_data - INFO - Fetched 35 records for PG from API
+2025-09-17 17:16:20,623 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-17 17:16:20,635 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-17 17:16:20,654 - src.portfolio.manager - INFO - Loaded portfolio state: $3752.78 cash, 10 active bets
+2025-09-23 11:01:20,478 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-23 11:01:20,494 - src.data.market_data - INFO - Market data manager initialized
+2025-09-23 11:01:20,494 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-23 11:01:20,494 - src.portfolio.manager - INFO - Loaded portfolio state: $3377.50 cash, 11 active bets
+2025-09-23 11:01:20,509 - src.portfolio.manager - INFO - Portfolio initialized: $3377.50 cash, 11 active bets
+2025-09-23 11:01:20,509 - src.cli.bet_monitor - INFO - Monitoring 11 positions for threshold triggers...
+2025-09-23 11:01:20,558 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:01:26,339 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:01:26,370 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:01:26,465 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:01:26,481 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:01:26,607 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:01:26,641 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:01:26,796 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:01:26,828 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:01:26,922 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:01:26,938 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:01:27,049 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:01:27,067 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:01:27,174 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:01:27,206 - src.data.market_data - INFO - Extending history for PG - fetching 7 days
+2025-09-23 11:01:27,300 - src.data.market_data - INFO - Fetched 35 records for PG from API
+2025-09-23 11:01:27,331 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:01:27,442 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:01:27,473 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:01:27,584 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:01:27,600 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:01:27,710 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:01:27,725 - src.cli.bet_monitor - INFO - SETTLING POSITION - PG: LOSS THRESHOLD HIT: -3.15% (stop: -3.0%)
+2025-09-23 11:01:27,725 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-23 11:01:27,725 - src.portfolio.manager - INFO - Loaded portfolio state: $3377.50 cash, 11 active bets
+2025-09-23 11:01:27,725 - src.portfolio.manager - INFO - Portfolio initialized: $3377.50 cash, 11 active bets
+2025-09-23 11:01:27,741 - src.portfolio.manager - INFO - Bet b8092c59-cead-4e91-b6ee-67ca622cf98e closed successfully - LOST: $-16.83 P&L (after $2.30 exit fee)
+2025-09-23 11:01:27,773 - src.portfolio.manager - INFO - Portfolio manager cleanup complete
+2025-09-23 11:01:27,788 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:01:27,788 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:01:27,820 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:01:27,835 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:01:27,851 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:01:27,870 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:01:27,898 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:01:27,898 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:01:27,929 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:01:27,945 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:01:27,970 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:01:27,976 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:01:28,008 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:01:28,008 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:01:28,041 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:01:28,041 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:01:28,071 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:01:28,087 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:01:28,103 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:01:28,118 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:01:28,150 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:06:28,165 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:06:28,175 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:06:28,184 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:06:28,218 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:06:28,234 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:06:28,267 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:06:28,284 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:06:28,315 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:06:28,334 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:06:28,364 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:06:28,389 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:06:28,423 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:06:28,446 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:06:28,474 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:06:28,496 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:06:28,531 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:06:28,548 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:06:28,574 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:06:28,589 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:06:28,624 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:06:28,646 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:06:28,681 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:06:28,696 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:06:28,724 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:06:28,734 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:06:28,774 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:06:28,797 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:06:28,829 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:06:28,845 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:06:28,879 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:06:28,889 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:06:28,924 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:06:28,959 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:06:28,984 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:06:29,004 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:06:29,039 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:06:29,066 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:06:29,104 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:06:29,134 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:06:29,180 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:06:29,230 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:06:29,274 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:11:29,293 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:11:29,307 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:11:29,339 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:11:29,381 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:11:29,411 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:11:29,452 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:11:29,482 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:11:29,522 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:11:29,552 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:11:29,597 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:11:29,628 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:11:29,670 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:11:29,695 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:11:29,736 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:11:29,813 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:11:29,882 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:11:29,927 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:11:30,005 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:11:30,083 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:11:30,168 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:11:30,287 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:11:30,422 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:11:30,550 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:11:30,648 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:11:30,685 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:11:30,737 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:11:30,767 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:11:30,817 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:11:30,851 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:11:30,897 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:11:30,929 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:11:30,982 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:11:31,024 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:11:31,065 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:11:31,117 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:11:31,164 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:11:31,199 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:11:31,247 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:11:31,281 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:11:31,330 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:11:31,364 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:11:31,405 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:16:31,432 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:16:31,444 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:16:31,485 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:16:31,531 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:16:31,568 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:16:31,611 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:16:31,644 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:16:31,690 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:16:31,730 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:16:31,778 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:16:31,807 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:16:31,852 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:16:31,892 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:16:31,944 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:16:31,987 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:16:32,027 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:16:32,068 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:16:32,107 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:16:32,149 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:16:32,198 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:16:32,246 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:16:32,298 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:16:32,334 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:16:32,383 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:16:32,426 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:16:32,482 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:16:32,526 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:16:32,582 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:16:32,618 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:16:32,665 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:16:32,713 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:16:32,769 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:16:32,811 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:16:32,863 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:16:32,906 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:16:32,957 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:16:32,992 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:16:33,040 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:16:33,087 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:16:33,150 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:16:33,197 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:16:33,239 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:21:33,260 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:21:33,271 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:21:33,304 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:21:33,335 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:21:33,351 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:21:33,380 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:21:33,401 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:21:33,446 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:21:33,466 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:21:33,496 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:21:33,510 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:21:33,538 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:21:33,565 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:21:33,601 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:21:33,625 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:21:33,675 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:21:33,697 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:21:33,735 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:21:33,767 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:21:33,806 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:21:33,861 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:21:33,895 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:21:33,915 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:21:33,971 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:21:34,006 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:21:34,046 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:21:34,071 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:21:34,097 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:21:34,127 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:21:34,155 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:21:34,179 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:21:34,216 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:21:34,236 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:21:34,264 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:21:34,288 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:21:34,320 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:21:34,345 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:21:34,376 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:21:34,396 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:21:34,428 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:21:34,453 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:21:34,475 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:26:34,485 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:26:34,495 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:26:34,515 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:26:34,545 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:26:34,575 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:26:34,620 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:26:34,639 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:26:34,680 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:26:34,710 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:26:34,745 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:26:34,767 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:26:34,798 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:26:34,820 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:26:34,855 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:26:34,865 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:26:34,909 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:26:34,935 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:26:34,969 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:26:34,989 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:26:35,034 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:26:35,069 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:26:35,105 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:26:35,130 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:26:35,165 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:26:35,185 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:26:35,235 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:26:35,265 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:26:35,308 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:26:35,340 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:26:35,375 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:26:35,395 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:26:35,433 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:26:35,445 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:26:35,475 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:26:35,485 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:26:35,515 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:26:35,535 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:26:35,561 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:26:35,593 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:26:35,640 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:26:35,665 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:26:35,706 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:31:35,727 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:31:35,727 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:31:35,755 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:31:35,785 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:31:35,835 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:31:35,890 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:31:35,928 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:31:36,000 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:31:36,082 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:31:36,115 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:31:36,136 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:31:36,175 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:31:36,212 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:31:36,257 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:31:36,303 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:31:36,335 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:31:36,353 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:31:36,385 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:31:36,428 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:31:36,475 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:31:36,515 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:31:36,561 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:31:36,580 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:31:36,615 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:31:36,645 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:31:36,704 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:31:36,735 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:31:36,765 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:31:36,790 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:31:36,828 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:31:36,877 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:31:36,928 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:31:36,965 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:31:37,003 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:31:37,035 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:31:37,077 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:31:37,097 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:31:37,162 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:31:37,195 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:31:37,235 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:31:37,255 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:31:37,275 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:36:37,295 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:36:37,302 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:36:37,332 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:36:37,383 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:36:37,421 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:36:37,465 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:36:37,511 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:36:37,568 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:36:37,619 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:36:37,671 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:36:37,695 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:36:37,767 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:36:37,810 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:36:37,864 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:36:37,898 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:36:37,957 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:36:38,015 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:36:38,080 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:36:38,124 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:36:38,176 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:36:38,225 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:36:38,288 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:36:38,318 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:36:38,365 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:36:38,395 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:36:38,445 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:36:38,469 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:36:38,508 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:36:38,541 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:36:38,588 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:36:38,619 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:36:38,742 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:36:38,771 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:36:38,819 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:36:38,866 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:36:38,909 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:36:38,945 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:36:38,991 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:36:39,026 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:36:39,075 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:36:39,102 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:36:39,145 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:41:39,171 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:41:39,187 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:41:39,219 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:41:39,250 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:41:39,282 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:41:39,323 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:41:39,329 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:41:39,372 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:41:39,401 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:41:39,428 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:41:39,459 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:41:39,506 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:41:39,538 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:41:39,585 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:41:39,601 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:41:39,651 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:41:39,668 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:41:39,719 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:41:39,754 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:41:39,802 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:41:39,835 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:41:39,881 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:41:39,912 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:41:39,960 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:41:39,992 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:41:40,029 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:41:40,070 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:41:40,125 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:41:40,152 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:41:40,195 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:41:40,227 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:41:40,259 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:41:40,290 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:41:40,338 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:41:40,353 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:41:40,413 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:41:40,426 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:41:40,461 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:41:40,493 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:41:40,526 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:41:40,557 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:41:40,603 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:46:40,626 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:46:40,631 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:46:40,652 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:46:40,680 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:46:40,698 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:46:40,724 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:46:40,745 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:46:40,773 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:46:40,798 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:46:40,828 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:46:40,848 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:46:40,874 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:46:40,895 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:46:40,923 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:46:40,944 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:46:40,972 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:46:40,986 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:46:41,028 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:46:41,064 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:46:41,092 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:46:41,113 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:46:41,148 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:46:41,176 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:46:41,205 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:46:41,219 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:46:41,254 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:46:41,269 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:46:41,298 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:46:41,318 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:46:41,339 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:46:41,363 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:46:41,394 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:46:41,412 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:46:41,440 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:46:41,455 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:46:41,484 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:46:41,498 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:46:41,541 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:46:41,569 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:46:41,605 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:46:41,633 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:46:41,668 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:51:41,684 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:51:41,684 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:51:41,710 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:51:41,756 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:51:41,784 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:51:41,819 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:51:41,835 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:51:41,873 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:51:41,898 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:51:41,930 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:51:41,961 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:51:41,993 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:51:42,009 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:51:42,056 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:51:42,088 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:51:42,119 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:51:42,135 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:51:42,184 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:51:42,230 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:51:42,276 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:51:42,292 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:51:42,355 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:51:42,387 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:51:42,435 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:51:42,450 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:51:42,498 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:51:42,529 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:51:42,576 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:51:42,608 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:51:42,655 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:51:42,688 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:51:42,734 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:51:42,765 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:51:42,813 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:51:42,844 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:51:42,875 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:51:42,891 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:51:42,923 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:51:42,938 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:51:42,970 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:51:42,985 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:51:43,016 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 11:56:43,031 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 11:56:43,047 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:56:43,080 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:56:43,129 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:56:43,160 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:56:43,204 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:56:43,230 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:56:43,275 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:56:43,301 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:56:43,348 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:56:43,377 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:56:43,426 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:56:43,443 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:56:43,482 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:56:43,501 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:56:43,548 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:56:43,567 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:56:43,604 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:56:43,630 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:56:43,666 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:56:43,697 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:56:43,749 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 11:56:43,766 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 11:56:43,803 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 11:56:43,817 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 11:56:43,847 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 11:56:43,861 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 11:56:43,894 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 11:56:43,912 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 11:56:43,962 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 11:56:43,984 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 11:56:44,030 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 11:56:44,062 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 11:56:44,111 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 11:56:44,126 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 11:56:44,174 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 11:56:44,207 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 11:56:44,251 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 11:56:44,285 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 11:56:44,330 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 11:56:44,369 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 11:56:44,403 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:01:44,434 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:01:44,450 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:01:44,483 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:01:44,530 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:01:44,570 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:01:44,607 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:01:44,639 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:01:44,687 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:01:44,714 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:01:44,755 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:01:44,789 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:01:44,833 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:01:44,868 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:01:44,910 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:01:44,939 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:01:44,983 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:01:45,001 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:01:45,039 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:01:45,058 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:01:45,098 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:01:45,123 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:01:45,171 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:01:45,193 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:01:45,231 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:01:45,249 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:01:45,295 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:01:45,316 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:01:45,357 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:01:45,409 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:01:45,458 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:01:45,485 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:01:45,527 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:01:45,550 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:01:45,575 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:01:45,590 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:01:45,620 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:01:45,650 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:01:45,691 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:01:45,728 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:01:45,777 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:01:45,799 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:01:45,834 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:06:45,863 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:06:45,878 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:06:45,908 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:06:45,953 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:06:45,983 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:06:46,034 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:06:46,065 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:06:46,116 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:06:46,148 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:06:46,202 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:06:46,233 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:06:46,273 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:06:46,304 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:06:46,346 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:06:46,375 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:06:46,421 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:06:46,452 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:06:46,503 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:06:46,527 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:06:46,573 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:06:46,604 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:06:46,650 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:06:46,676 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:06:46,725 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:06:46,748 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:06:46,796 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:06:46,814 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:06:46,859 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:06:46,877 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:06:46,923 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:06:46,948 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:06:46,992 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:06:47,017 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:06:47,071 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:06:47,093 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:06:47,139 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:06:47,168 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:06:47,215 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:06:47,236 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:06:47,269 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:06:47,289 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:06:47,316 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:11:47,341 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:11:47,355 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:11:47,374 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:11:47,408 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:11:47,437 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:11:47,487 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:11:47,522 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:11:47,561 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:11:47,575 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:11:47,617 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:11:47,639 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:11:47,686 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:11:47,709 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:11:47,745 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:11:47,762 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:11:47,801 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:11:47,830 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:11:47,879 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:11:47,897 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:11:47,943 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:11:47,969 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:11:48,026 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:11:48,060 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:11:48,108 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:11:48,134 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:11:48,181 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:11:48,209 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:11:48,257 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:11:48,282 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:11:48,324 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:11:48,359 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:11:48,410 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:11:48,427 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:11:48,463 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:11:48,476 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:11:48,522 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:11:48,551 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:11:48,599 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:11:48,632 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:11:48,669 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:11:48,697 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:11:48,734 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:16:48,761 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:16:48,774 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:16:48,796 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:16:48,839 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:16:48,865 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:16:48,913 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:16:48,944 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:16:48,990 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:16:49,017 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:16:49,061 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:16:49,094 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:16:49,133 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:16:49,152 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:16:49,201 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:16:49,231 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:16:49,277 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:16:49,312 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:16:49,353 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:16:49,383 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:16:49,418 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:16:49,452 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:16:49,508 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:16:49,543 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:16:49,593 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:16:49,623 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:16:49,669 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:16:49,697 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:16:49,737 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:16:49,767 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:16:49,814 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:16:49,842 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:16:49,893 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:16:49,921 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:16:49,956 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:16:49,985 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:16:50,037 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:16:50,062 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:16:50,104 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:16:50,130 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:16:50,173 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:16:50,201 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:16:50,237 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:21:50,261 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:21:50,276 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:21:50,307 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:21:50,357 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:21:50,386 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:21:50,417 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:21:50,457 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:21:50,498 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:21:50,528 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:21:50,560 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:21:50,591 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:21:50,638 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:21:50,670 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:21:50,685 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:21:50,717 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:21:50,764 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:21:50,796 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:21:50,848 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:21:50,889 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:21:50,936 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:21:50,958 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:21:51,015 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:21:51,046 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:21:51,094 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:21:51,125 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:21:51,172 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:21:51,204 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:21:51,250 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:21:51,266 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:21:51,313 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:21:51,345 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:21:51,392 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:21:51,408 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:21:51,460 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:21:51,487 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:21:51,550 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:21:51,582 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:21:51,614 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:21:51,645 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:21:51,692 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:21:51,723 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:21:51,770 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:26:51,778 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:26:51,794 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:26:51,825 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:26:51,889 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:26:51,905 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:26:51,968 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:26:51,983 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:26:52,047 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:26:52,063 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:26:52,094 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:26:52,125 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:26:52,174 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:26:52,196 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:26:52,218 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:26:52,251 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:26:52,297 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:26:52,312 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:26:52,351 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:26:52,359 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:26:52,407 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:26:52,438 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:26:52,501 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:26:52,517 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:26:52,564 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:26:52,596 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:26:52,652 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:26:52,675 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:26:52,722 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:26:52,750 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:26:52,797 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:26:52,828 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:26:52,859 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:26:52,875 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:26:52,922 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:26:52,953 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:26:53,000 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:26:53,016 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:26:53,063 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:26:53,095 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:26:53,158 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:26:53,189 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:26:53,221 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:31:53,258 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:31:53,274 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:31:53,305 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:31:53,336 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:31:53,368 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:31:53,415 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:31:53,446 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:31:53,494 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:31:53,509 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:31:53,573 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:31:53,606 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:31:53,642 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:31:53,671 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:31:53,706 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:31:53,731 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:31:53,784 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:31:53,809 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:31:53,840 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:31:53,888 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:31:53,918 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:31:53,950 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:31:54,013 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:31:54,028 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:31:54,076 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:31:54,107 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:31:54,155 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:31:54,170 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:31:54,217 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:31:54,233 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:31:54,291 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:31:54,310 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:31:54,357 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:31:54,389 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:31:54,436 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:31:54,452 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:31:54,483 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:31:54,515 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:31:54,546 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:31:54,578 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:31:54,625 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:31:54,656 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:31:54,687 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:36:54,689 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:36:54,707 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:36:54,736 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:36:54,783 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:36:54,799 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:36:54,846 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:36:54,878 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:36:54,910 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:36:54,937 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:36:54,974 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:36:55,005 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:36:55,037 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:36:55,078 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:36:55,105 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:36:55,131 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:36:55,147 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:36:55,163 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:36:55,195 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:36:55,227 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:36:55,274 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:36:55,289 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:36:55,353 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:36:55,369 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:36:55,416 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:36:55,448 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:36:55,490 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:36:55,511 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:36:55,542 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:36:55,558 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:36:55,590 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:36:55,605 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:36:55,638 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:36:55,653 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:36:55,700 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:36:55,732 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:36:55,779 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:36:55,813 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:36:55,851 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:36:55,884 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:36:55,922 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:36:55,939 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:36:55,975 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 12:41:56,002 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 12:41:56,033 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:41:56,068 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:41:56,119 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:41:56,170 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:41:56,222 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:41:56,272 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:41:56,345 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:41:56,385 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:41:56,415 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:41:56,435 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:41:56,466 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:41:56,509 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:41:56,552 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:41:56,589 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:41:56,627 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:41:56,650 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:41:56,685 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:41:56,729 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:41:56,771 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:41:56,818 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:41:56,872 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 12:41:56,890 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 12:41:56,921 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 12:41:56,969 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 12:41:57,001 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 12:41:57,040 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 12:41:57,085 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 12:41:57,104 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 12:41:57,134 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 12:41:57,169 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 12:41:57,215 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 12:41:57,261 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 12:41:57,317 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 12:41:57,334 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 12:41:57,360 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 12:41:57,378 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 12:41:57,415 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 12:41:57,440 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 12:41:57,495 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 12:41:57,531 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 12:41:57,573 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 11 active bets
+2025-09-23 14:14:44,497 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-23 14:14:44,501 - src.data.market_data - INFO - Market data manager initialized
+2025-09-23 14:14:44,501 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-23 14:14:44,507 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 10 active bets
+2025-09-23 14:14:44,507 - src.portfolio.manager - INFO - Portfolio initialized: $3821.66 cash, 10 active bets
+2025-09-23 14:14:44,507 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-23 14:14:44,517 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 14:14:45,006 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 14:14:45,037 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 14:14:45,132 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 14:14:45,164 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 14:14:45,273 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 14:14:45,305 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 14:14:45,415 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 14:14:45,447 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 14:14:45,541 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 14:14:45,573 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 14:14:45,667 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 14:14:45,701 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 14:14:45,824 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 14:14:45,844 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 14:14:45,951 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 14:14:45,982 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 14:14:46,077 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 14:14:46,108 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 14:14:46,218 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 14:14:46,257 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-23 14:14:46,265 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-23 14:14:46,281 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-23 14:14:46,301 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-23 14:14:46,328 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-23 14:14:46,328 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-23 14:14:46,360 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-23 14:14:46,376 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-23 14:14:46,401 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-23 14:14:46,408 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-23 14:14:46,444 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-23 14:14:46,455 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-23 14:14:46,471 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-23 14:14:46,488 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-23 14:14:46,518 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-23 14:14:46,518 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-23 14:14:46,549 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-23 14:14:46,549 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-23 14:14:46,580 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-23 14:14:46,596 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-23 14:14:46,622 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 10 active bets
+2025-09-24 11:36:26,399 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-24 11:36:26,419 - src.data.market_data - INFO - Market data manager initialized
+2025-09-24 11:36:26,423 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-24 11:36:26,429 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 10 active bets
+2025-09-24 11:36:26,432 - src.portfolio.manager - INFO - Portfolio initialized: $3821.66 cash, 10 active bets
+2025-09-24 11:36:26,449 - src.cli.bet_monitor - INFO - Monitoring 10 positions for threshold triggers...
+2025-09-24 11:36:26,494 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-24 11:36:31,044 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-24 11:36:31,068 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-24 11:36:31,179 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-24 11:36:31,199 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-24 11:36:31,324 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-24 11:36:31,347 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-24 11:36:31,454 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-24 11:36:31,478 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-24 11:36:31,574 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-24 11:36:31,604 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-24 11:36:31,708 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-24 11:36:31,734 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-24 11:36:31,832 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-24 11:36:31,854 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-24 11:36:31,957 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-24 11:36:31,979 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-24 11:36:32,075 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-24 11:36:32,105 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-24 11:36:32,202 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-24 11:36:32,230 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-24 11:36:32,239 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-24 11:36:32,264 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-24 11:36:32,276 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-24 11:36:32,300 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-24 11:36:32,314 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-24 11:36:32,338 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-24 11:36:32,347 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-24 11:36:32,372 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-24 11:36:32,384 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-24 11:36:32,410 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-24 11:36:32,421 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-24 11:36:32,446 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-24 11:36:32,464 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-24 11:36:32,488 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-24 11:36:32,501 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-24 11:36:32,526 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-24 11:36:32,539 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-24 11:36:32,561 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-24 11:36:32,577 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-24 11:36:32,599 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 10 active bets
+2025-09-24 11:37:15,453 - __main__ - INFO - Starting Kelly Trading System in automated mode
+2025-09-24 11:37:15,709 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error loading LSTM model: Could not deserialize 'keras.metrics.mse' because it is not a KerasSaveable subclass
+2025-09-24 11:37:15,743 - src.prediction.algorithms.base_algorithm.Linear Regression - INFO - Regression models loaded from disk
+2025-09-24 11:37:15,743 - src.prediction.predictor - INFO - Initialized 5 algorithms: ['sma', 'rsi', 'rf', 'lstm', 'regression']
+2025-09-24 11:37:15,744 - src.core.trading_system - INFO - Starting trading system in automated mode
+2025-09-24 11:37:15,745 - src.core.trading_system - INFO - Initializing system components...
+2025-09-24 11:37:15,745 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-24 11:37:15,749 - src.data.market_data - INFO - Market data manager initialized
+2025-09-24 11:37:15,749 - src.prediction.predictor - INFO - Initializing prediction engine...
+2025-09-24 11:37:15,754 - src.prediction.predictor - INFO - Loaded algorithm weights: {'sma': 0.2, 'rsi': 0.2, 'rf': 0.2, 'lstm': 0.2, 'regression': 0.2}
+2025-09-24 11:37:15,755 - src.prediction.predictor - INFO - Prediction engine initialized
+2025-09-24 11:37:15,755 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-24 11:37:15,760 - src.portfolio.manager - INFO - Loaded portfolio state: $3821.66 cash, 10 active bets
+2025-09-24 11:37:15,761 - src.portfolio.manager - INFO - Portfolio initialized: $3821.66 cash, 10 active bets
+2025-09-24 11:37:15,762 - src.risk.manager - INFO - Initializing risk management system...
+2025-09-24 11:37:15,765 - src.risk.manager - INFO - Risk management initialized - Status: active
+2025-09-24 11:37:15,766 - src.core.trading_system - INFO - All components initialized successfully
+2025-09-24 11:37:15,766 - src.core.trading_system - INFO - Checking existing bets for threshold triggers...
+2025-09-24 11:37:15,768 - src.portfolio.manager - INFO - Retrieved 10 alive bets for monitoring
+2025-09-24 11:37:15,769 - src.core.trading_system - INFO - Monitoring 10 active positions
+2025-09-24 11:37:15,787 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-24 11:37:20,524 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-24 11:37:20,549 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-24 11:37:20,648 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-24 11:37:20,672 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-24 11:37:20,772 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-24 11:37:20,797 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-24 11:37:20,894 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-24 11:37:20,918 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-24 11:37:21,015 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-24 11:37:21,038 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-24 11:37:21,139 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-24 11:37:21,161 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-24 11:37:21,258 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-24 11:37:21,279 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-24 11:37:21,376 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-24 11:37:21,400 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-24 11:37:21,522 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-24 11:37:21,545 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-24 11:37:21,648 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-24 11:37:21,667 - src.core.trading_system - INFO - Fetching market data and generating predictions...
+2025-09-24 11:37:21,667 - src.utils.asset_selector - INFO - Selected 141 assets (91 stocks, 50 crypto)
+2025-09-24 11:37:21,668 - src.data.market_data - INFO - Fetching data for 141 assets
+2025-09-24 11:37:21,672 - src.data.market_data - INFO - Extending history for AAPL - fetching 7 days
+2025-09-24 11:37:21,679 - src.data.market_data - INFO - Extending history for MSFT - fetching 7 days
+2025-09-24 11:37:21,686 - src.data.market_data - INFO - Extending history for AMZN - fetching 7 days
+2025-09-24 11:37:21,694 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-24 11:37:21,712 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-24 11:37:21,730 - src.data.market_data - INFO - Extending history for TSLA - fetching 8 days
+2025-09-24 11:37:21,739 - src.data.market_data - INFO - Extending history for GOOG - fetching 8 days
+2025-09-24 11:37:21,749 - src.data.market_data - INFO - Extending history for BRK-B - fetching 8 days
+2025-09-24 11:37:21,774 - src.data.market_data - INFO - Extending history for META - fetching 8 days
+2025-09-24 11:37:21,784 - src.data.market_data - INFO - Extending history for UNH - fetching 8 days
+2025-09-24 11:37:21,789 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-24 11:37:21,811 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-24 11:37:21,829 - src.data.market_data - INFO - Fetched 35 records for AAPL from API
+2025-09-24 11:37:21,887 - src.data.market_data - INFO - Fetched 42 records for META from API
+2025-09-24 11:37:21,995 - src.data.market_data - INFO - Fetched 35 records for MSFT from API
+2025-09-24 11:37:22,015 - src.data.market_data - INFO - Fetched 35 records for AMZN from API
+2025-09-24 11:37:22,035 - src.data.market_data - INFO - Fetched 42 records for TSLA from API
+2025-09-24 11:37:22,056 - src.data.market_data - INFO - Fetched 42 records for GOOG from API
+2025-09-24 11:37:22,081 - src.data.market_data - INFO - Fetched 42 records for BRK-B from API
+2025-09-24 11:37:22,102 - src.data.market_data - INFO - Fetched 42 records for UNH from API
+2025-09-24 11:37:23,133 - src.data.market_data - INFO - Extending history for XOM - fetching 8 days
+2025-09-24 11:37:23,140 - src.data.market_data - INFO - Extending history for LLY - fetching 8 days
+2025-09-24 11:37:23,147 - src.data.market_data - INFO - Extending history for JPM - fetching 8 days
+2025-09-24 11:37:23,152 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-24 11:37:23,170 - src.data.market_data - INFO - Extending history for V - fetching 8 days
+2025-09-24 11:37:23,175 - src.data.market_data - INFO - Extending history for PG - fetching 7 days
+2025-09-24 11:37:23,182 - src.data.market_data - INFO - Extending history for MA - fetching 8 days
+2025-09-24 11:37:23,187 - src.data.market_data - INFO - Extending history for HD - fetching 8 days
+2025-09-24 11:37:23,196 - src.data.market_data - INFO - Extending history for CVX - fetching 8 days
+2025-09-24 11:37:23,203 - src.data.market_data - INFO - Extending history for MRK - fetching 8 days
+2025-09-24 11:37:23,206 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-24 11:37:23,331 - src.data.market_data - INFO - Fetched 42 records for XOM from API
+2025-09-24 11:37:23,349 - src.data.market_data - INFO - Fetched 42 records for LLY from API
+2025-09-24 11:37:23,367 - src.data.market_data - INFO - Fetched 42 records for V from API
+2025-09-24 11:37:23,396 - src.data.market_data - INFO - Fetched 42 records for JPM from API
+2025-09-24 11:37:23,424 - src.data.market_data - INFO - Fetched 42 records for MA from API
+2025-09-24 11:37:23,444 - src.data.market_data - INFO - Fetched 35 records for PG from API
+2025-09-24 11:37:23,462 - src.data.market_data - INFO - Fetched 42 records for HD from API
+2025-09-24 11:37:23,481 - src.data.market_data - INFO - Fetched 42 records for CVX from API
+2025-09-24 11:37:23,504 - src.data.market_data - INFO - Fetched 42 records for MRK from API
+2025-09-24 11:37:24,547 - src.data.market_data - INFO - Extending history for ABBV - fetching 8 days
+2025-09-24 11:37:24,552 - src.data.market_data - INFO - Extending history for PEP - fetching 8 days
+2025-09-24 11:37:24,559 - src.data.market_data - INFO - Extending history for KO - fetching 8 days
+2025-09-24 11:37:24,565 - src.data.market_data - INFO - Extending history for AVGO - fetching 8 days
+2025-09-24 11:37:24,570 - src.data.market_data - INFO - Extending history for PFE - fetching 8 days
+2025-09-24 11:37:24,577 - src.data.market_data - INFO - Extending history for TMO - fetching 8 days
+2025-09-24 11:37:24,582 - src.data.market_data - INFO - Extending history for COST - fetching 8 days
+2025-09-24 11:37:24,589 - src.data.market_data - INFO - Extending history for WMT - fetching 8 days
+2025-09-24 11:37:24,597 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-24 11:37:24,614 - src.data.market_data - INFO - Extending history for CRM - fetching 8 days
+2025-09-24 11:37:24,616 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-24 11:37:24,648 - src.data.market_data - INFO - Fetched 42 records for ABBV from API
+2025-09-24 11:37:24,767 - src.data.market_data - INFO - Fetched 42 records for PEP from API
+2025-09-24 11:37:24,786 - src.data.market_data - INFO - Fetched 42 records for AVGO from API
+2025-09-24 11:37:24,804 - src.data.market_data - INFO - Fetched 42 records for KO from API
+2025-09-24 11:37:24,823 - src.data.market_data - INFO - Fetched 42 records for TMO from API
+2025-09-24 11:37:24,841 - src.data.market_data - INFO - Fetched 42 records for PFE from API
+2025-09-24 11:37:24,861 - src.data.market_data - INFO - Fetched 42 records for COST from API
+2025-09-24 11:37:24,883 - src.data.market_data - INFO - Fetched 42 records for WMT from API
+2025-09-24 11:37:24,902 - src.data.market_data - INFO - Fetched 42 records for CRM from API
+2025-09-24 11:37:25,935 - src.data.market_data - INFO - Extending history for ABT - fetching 8 days
+2025-09-24 11:37:25,942 - src.data.market_data - INFO - Extending history for LIN - fetching 8 days
+2025-09-24 11:37:25,951 - src.data.market_data - INFO - Extending history for CSCO - fetching 8 days
+2025-09-24 11:37:25,958 - src.data.market_data - INFO - Extending history for DIS - fetching 8 days
+2025-09-24 11:37:25,966 - src.data.market_data - INFO - Extending history for ACN - fetching 8 days
+2025-09-24 11:37:25,972 - src.data.market_data - INFO - Extending history for DHR - fetching 8 days
+2025-09-24 11:37:25,979 - src.data.market_data - INFO - Extending history for TXN - fetching 8 days
+2025-09-24 11:37:25,986 - src.data.market_data - INFO - Extending history for VZ - fetching 8 days
+2025-09-24 11:37:25,993 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-24 11:37:26,010 - src.data.market_data - INFO - Extending history for ADBE - fetching 8 days
+2025-09-24 11:37:26,012 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-24 11:37:26,069 - src.data.market_data - INFO - Fetched 42 records for ABT from API
+2025-09-24 11:37:26,145 - src.data.market_data - INFO - Fetched 42 records for LIN from API
+2025-09-24 11:37:26,165 - src.data.market_data - INFO - Fetched 42 records for CSCO from API
+2025-09-24 11:37:26,184 - src.data.market_data - INFO - Fetched 42 records for ACN from API
+2025-09-24 11:37:26,205 - src.data.market_data - INFO - Fetched 42 records for DIS from API
+2025-09-24 11:37:26,224 - src.data.market_data - INFO - Fetched 42 records for DHR from API
+2025-09-24 11:37:26,243 - src.data.market_data - INFO - Fetched 42 records for TXN from API
+2025-09-24 11:37:26,263 - src.data.market_data - INFO - Fetched 42 records for VZ from API
+2025-09-24 11:37:26,280 - src.data.market_data - INFO - Fetched 42 records for ADBE from API
+2025-09-24 11:37:27,307 - src.data.market_data - INFO - Extending history for NEE - fetching 8 days
+2025-09-24 11:37:27,317 - src.data.market_data - INFO - Extending history for ORCL - fetching 8 days
+2025-09-24 11:37:27,323 - src.data.market_data - INFO - Extending history for BMY - fetching 8 days
+2025-09-24 11:37:27,331 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-24 11:37:27,356 - src.data.market_data - INFO - Extending history for RTX - fetching 8 days
+2025-09-24 11:37:27,367 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-24 11:37:27,394 - src.data.market_data - INFO - Extending history for CMCSA - fetching 8 days
+2025-09-24 11:37:27,403 - src.data.market_data - INFO - Extending history for COP - fetching 8 days
+2025-09-24 11:37:27,415 - src.data.market_data - INFO - Extending history for NFLX - fetching 8 days
+2025-09-24 11:37:27,481 - src.data.market_data - INFO - Extending history for AMD - fetching 8 days
+2025-09-24 11:37:27,483 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-24 11:37:27,545 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-24 11:37:27,615 - src.data.market_data - INFO - Fetched 42 records for NEE from API
+2025-09-24 11:37:27,638 - src.data.market_data - INFO - Fetched 42 records for ORCL from API
+2025-09-24 11:37:27,667 - src.data.market_data - INFO - Fetched 42 records for BMY from API
+2025-09-24 11:37:27,691 - src.data.market_data - INFO - Fetched 42 records for RTX from API
+2025-09-24 11:37:27,714 - src.data.market_data - INFO - Fetched 42 records for CMCSA from API
+2025-09-24 11:37:27,740 - src.data.market_data - INFO - Fetched 42 records for COP from API
+2025-09-24 11:37:27,774 - src.data.market_data - INFO - Fetched 42 records for NFLX from API
+2025-09-24 11:37:27,807 - src.data.market_data - INFO - Fetched 42 records for AMD from API
+2025-09-24 11:37:28,856 - src.data.market_data - INFO - Extending history for LOW - fetching 8 days
+2025-09-24 11:37:28,865 - src.data.market_data - INFO - Extending history for HON - fetching 8 days
+2025-09-24 11:37:28,876 - src.data.market_data - INFO - Extending history for AMGN - fetching 8 days
+2025-09-24 11:37:28,884 - src.data.market_data - INFO - Extending history for UPS - fetching 8 days
+2025-09-24 11:37:28,894 - src.data.market_data - INFO - Extending history for IBM - fetching 8 days
+2025-09-24 11:37:28,901 - src.data.market_data - INFO - Extending history for BA - fetching 8 days
+2025-09-24 11:37:28,910 - src.data.market_data - INFO - Extending history for GS - fetching 8 days
+2025-09-24 11:37:28,917 - src.data.market_data - INFO - Extending history for SPGI - fetching 8 days
+2025-09-24 11:37:28,925 - src.data.market_data - INFO - Extending history for DE - fetching 8 days
+2025-09-24 11:37:28,933 - src.data.market_data - INFO - Extending history for BKNG - fetching 8 days
+2025-09-24 11:37:28,969 - src.data.market_data - INFO - Fetched 42 records for HON from API
+2025-09-24 11:37:29,132 - src.data.market_data - INFO - Fetched 42 records for LOW from API
+2025-09-24 11:37:29,154 - src.data.market_data - INFO - Fetched 42 records for AMGN from API
+2025-09-24 11:37:29,176 - src.data.market_data - INFO - Fetched 42 records for UPS from API
+2025-09-24 11:37:29,197 - src.data.market_data - INFO - Fetched 42 records for IBM from API
+2025-09-24 11:37:29,218 - src.data.market_data - INFO - Fetched 42 records for GS from API
+2025-09-24 11:37:29,239 - src.data.market_data - INFO - Fetched 42 records for BA from API
+2025-09-24 11:37:29,267 - src.data.market_data - INFO - Fetched 42 records for DE from API
+2025-09-24 11:37:29,291 - src.data.market_data - INFO - Fetched 42 records for SPGI from API
+2025-09-24 11:37:29,311 - src.data.market_data - INFO - Fetched 42 records for BKNG from API
+2025-09-24 11:37:30,351 - src.data.market_data - INFO - Extending history for BLK - fetching 8 days
+2025-09-24 11:37:30,362 - src.data.market_data - INFO - Extending history for ELV - fetching 8 days
+2025-09-24 11:37:30,371 - src.data.market_data - INFO - Extending history for CAT - fetching 8 days
+2025-09-24 11:37:30,381 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-24 11:37:30,402 - src.data.market_data - INFO - Extending history for GILD - fetching 8 days
+2025-09-24 11:37:30,411 - src.data.market_data - INFO - Extending history for ADP - fetching 8 days
+2025-09-24 11:37:30,416 - src.data.market_data - INFO - Extending history for SYK - fetching 8 days
+2025-09-24 11:37:30,424 - src.data.market_data - INFO - Extending history for TJX - fetching 8 days
+2025-09-24 11:37:30,431 - src.data.market_data - INFO - Extending history for VRTX - fetching 8 days
+2025-09-24 11:37:30,440 - src.data.market_data - INFO - Extending history for AXP - fetching 8 days
+2025-09-24 11:37:30,442 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-24 11:37:30,629 - src.data.market_data - INFO - Fetched 42 records for BLK from API
+2025-09-24 11:37:30,650 - src.data.market_data - INFO - Fetched 42 records for CAT from API
+2025-09-24 11:37:30,674 - src.data.market_data - INFO - Fetched 42 records for ELV from API
+2025-09-24 11:37:30,706 - src.data.market_data - INFO - Fetched 42 records for GILD from API
+2025-09-24 11:37:30,728 - src.data.market_data - INFO - Fetched 42 records for ADP from API
+2025-09-24 11:37:30,761 - src.data.market_data - INFO - Fetched 42 records for TJX from API
+2025-09-24 11:37:30,788 - src.data.market_data - INFO - Fetched 42 records for VRTX from API
+2025-09-24 11:37:30,815 - src.data.market_data - INFO - Fetched 42 records for AXP from API
+2025-09-24 11:37:30,837 - src.data.market_data - INFO - Fetched 42 records for SYK from API
+2025-09-24 11:37:31,882 - src.data.market_data - INFO - Extending history for ADI - fetching 8 days
+2025-09-24 11:37:31,893 - src.data.market_data - INFO - Extending history for CVS - fetching 8 days
+2025-09-24 11:37:31,901 - src.data.market_data - INFO - Extending history for SCHW - fetching 8 days
+2025-09-24 11:37:31,909 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-24 11:37:31,915 - src.data.market_data - INFO - Extending history for LRCX - fetching 8 days
+2025-09-24 11:37:31,924 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-24 11:37:31,934 - src.data.market_data - INFO - Extending history for ISRG - fetching 8 days
+2025-09-24 11:37:31,942 - src.data.market_data - INFO - Extending history for SO - fetching 8 days
+2025-09-24 11:37:31,952 - src.data.market_data - INFO - Extending history for TMUS - fetching 8 days
+2025-09-24 11:37:31,960 - src.data.market_data - INFO - Extending history for ZTS - fetching 8 days
+2025-09-24 11:37:31,985 - src.data.market_data - INFO - Fetched 42 records for ADI from API
+2025-09-24 11:37:32,157 - src.data.market_data - INFO - Fetched 42 records for CVS from API
+2025-09-24 11:37:32,178 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-24 11:37:32,201 - src.data.market_data - INFO - Fetched 42 records for LRCX from API
+2025-09-24 11:37:32,226 - src.data.market_data - INFO - Fetched 42 records for SCHW from API
+2025-09-24 11:37:32,246 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-24 11:37:32,267 - src.data.market_data - INFO - Fetched 42 records for TMUS from API
+2025-09-24 11:37:32,293 - src.data.market_data - INFO - Fetched 42 records for SO from API
+2025-09-24 11:37:32,317 - src.data.market_data - INFO - Fetched 42 records for ISRG from API
+2025-09-24 11:37:32,346 - src.data.market_data - INFO - Fetched 42 records for ZTS from API
+2025-09-24 11:37:33,378 - src.data.market_data - INFO - Extending history for REGN - fetching 8 days
+2025-09-24 11:37:33,393 - src.data.market_data - INFO - Extending history for NOW - fetching 8 days
+2025-09-24 11:37:33,402 - src.data.market_data - INFO - Extending history for CB - fetching 8 days
+2025-09-24 11:37:33,414 - src.data.market_data - INFO - Extending history for MMC - fetching 8 days
+2025-09-24 11:37:33,426 - src.data.market_data - INFO - Extending history for FDX - fetching 8 days
+2025-09-24 11:37:33,433 - src.data.market_data - INFO - Extending history for EOG - fetching 8 days
+2025-09-24 11:37:33,441 - src.data.market_data - INFO - Extending history for MO - fetching 8 days
+2025-09-24 11:37:33,447 - src.data.market_data - INFO - Extending history for ETN - fetching 8 days
+2025-09-24 11:37:33,454 - src.data.market_data - INFO - Extending history for BSX - fetching 8 days
+2025-09-24 11:37:33,461 - src.data.market_data - INFO - Extending history for DUK - fetching 8 days
+2025-09-24 11:37:33,495 - src.data.market_data - INFO - Fetched 42 records for REGN from API
+2025-09-24 11:37:33,670 - src.data.market_data - INFO - Fetched 42 records for CB from API
+2025-09-24 11:37:33,691 - src.data.market_data - INFO - Fetched 42 records for NOW from API
+2025-09-24 11:37:33,713 - src.data.market_data - INFO - Fetched 42 records for MMC from API
+2025-09-24 11:37:33,734 - src.data.market_data - INFO - Fetched 42 records for FDX from API
+2025-09-24 11:37:33,756 - src.data.market_data - INFO - Fetched 42 records for ETN from API
+2025-09-24 11:37:33,777 - src.data.market_data - INFO - Fetched 42 records for BSX from API
+2025-09-24 11:37:33,797 - src.data.market_data - INFO - Fetched 42 records for EOG from API
+2025-09-24 11:37:33,822 - src.data.market_data - INFO - Fetched 42 records for DUK from API
+2025-09-24 11:37:33,849 - src.data.market_data - INFO - Fetched 42 records for MO from API
+2025-09-24 11:37:34,891 - src.data.market_data - INFO - Extending history for ITW - fetching 8 days
+2025-09-24 11:37:34,998 - src.data.market_data - INFO - Fetched 42 records for ITW from API
+2025-09-24 11:37:35,027 - src.data.market_data - INFO - Retrieved data for 91 assets
+2025-09-24 11:37:35,028 - src.prediction.predictor - INFO - Generating predictions for 91 assets
+2025-09-24 11:37:35,028 - src.prediction.predictor - INFO - Auto-training 2 untrained models...
+2025-09-24 11:37:35,028 - src.prediction.predictor - INFO - Adding AAPL (90 records) for training
+2025-09-24 11:37:35,029 - src.prediction.predictor - INFO - Adding MSFT (90 records) for training
+2025-09-24 11:37:35,029 - src.prediction.predictor - INFO - Adding GOOGL (90 records) for training
+2025-09-24 11:37:35,029 - src.prediction.predictor - INFO - Adding NVDA (90 records) for training
+2025-09-24 11:37:35,030 - src.prediction.predictor - INFO - Adding TSLA (90 records) for training
+2025-09-24 11:37:35,030 - src.prediction.predictor - INFO - Training rf model...
+2025-09-24 11:37:35,031 - src.prediction.algorithms.base_algorithm.Random Forest - INFO - Training Random Forest model...
+2025-09-24 11:37:35,255 - src.prediction.algorithms.base_algorithm.Random Forest - INFO - Random Forest training complete - Train accuracy: 1.000, Test accuracy: 0.953
+2025-09-24 11:37:35,288 - src.prediction.algorithms.base_algorithm.Random Forest - INFO - Model saved to models\random_forest\rf_model.joblib
+2025-09-24 11:37:35,290 - src.prediction.predictor - INFO - rf model trained successfully
+2025-09-24 11:37:35,290 - src.prediction.predictor - INFO - Training lstm model...
+2025-09-24 11:37:35,290 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - Training LSTM model...
+2025-09-24 11:37:35,335 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - Prepared LSTM training data: X shape (365, 60, 13), y shape (365,)
+2025-09-24 11:37:35,398 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - LSTM model built: 21076 parameters
+2025-09-24 11:38:07,451 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - LSTM training complete - Final loss: 0.0359, Val loss: 0.0015
+2025-09-24 11:38:07,452 - absl - WARNING - You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. 
+2025-09-24 11:38:07,509 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - INFO - LSTM model saved to models\lstm\lstm_model.h5
+2025-09-24 11:38:07,510 - src.prediction.predictor - INFO - lstm model trained successfully
+2025-09-24 11:38:07,611 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:07,862 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:07,946 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,034 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,123 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,207 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,301 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,396 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,483 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,567 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,645 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,734 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,820 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,895 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:08,987 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,075 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,170 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,271 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,357 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,469 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,567 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,665 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,766 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,867 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:09,970 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,075 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,176 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,263 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,357 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,437 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,527 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,621 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,710 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,788 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,875 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:10,964 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,058 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,149 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,245 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,322 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,397 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,477 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,572 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,650 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,727 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,802 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,884 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:11,969 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,056 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,145 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,241 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,335 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,426 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,521 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,619 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,706 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,813 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:12,903 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,001 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,093 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,182 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,276 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,374 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,462 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,551 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,635 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,703 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,791 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,872 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:13,946 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,040 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,131 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,217 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,299 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,380 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,467 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,554 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,640 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,736 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,817 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,898 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:14,985 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,070 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,166 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,252 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,336 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,431 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,528 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,620 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,703 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,799 - src.prediction.algorithms.base_algorithm.LSTM Neural Network - ERROR - Error in LSTM prediction: cannot reshape array of size 780 into shape (1,60,60)
+2025-09-24 11:38:15,831 - src.prediction.predictor - INFO - Generated 91 asset predictions
+2025-09-24 11:38:15,832 - src.core.trading_system - INFO - Generated 91 valid predictions
+2025-09-24 11:38:15,839 - src.portfolio.manager - INFO - Retrieved 10 alive bets for monitoring
+2025-09-24 11:38:15,841 - src.core.trading_system - INFO - Best opportunity (excluding 10 active bets): KO (STOCK) with 72.57% probability
+2025-09-24 11:38:15,842 - src.core.trading_system - INFO - Probability 72.57% >= threshold 60.0%, placing automatic bet
+2025-09-24 11:38:15,842 - src.portfolio.manager - INFO - Placing bet for KO at $66.73 with 72.6% probability
+2025-09-24 11:38:15,842 - src.kelly.calculator - INFO - Kelly recommendation: $382.17 (10.0% of capital), EV=0.028
+2025-09-24 11:38:15,874 - src.portfolio.manager - INFO - Bet placed: ef2f0db7-2fe6-4813-8572-95a7a76f86cd - KO $382.17 ($380.26 after $1.91 fee) (5.70 shares at $66.73)
+2025-09-24 11:38:15,876 - src.core.trading_system - INFO - Bet placed successfully: ef2f0db7-2fe6-4813-8572-95a7a76f86cd
+2025-09-24 11:59:59,272 - src.core.trading_system - INFO - Cleaning up resources...
+2025-09-24 11:59:59,272 - src.data.market_data - INFO - Market data manager cleanup complete
+2025-09-24 11:59:59,289 - src.portfolio.manager - INFO - Portfolio manager cleanup complete
+2025-09-24 11:59:59,289 - src.core.trading_system - INFO - Cleanup complete
+2025-09-24 11:59:59,290 - __main__ - INFO - System shutdown complete
+2025-09-29 15:19:55,876 - src.data.market_data - INFO - Initializing market data manager...
+2025-09-29 15:19:55,887 - src.data.market_data - INFO - Market data manager initialized
+2025-09-29 15:19:55,887 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-29 15:19:55,896 - src.portfolio.manager - INFO - Loaded portfolio state: $3439.50 cash, 11 active bets
+2025-09-29 15:19:55,896 - src.portfolio.manager - INFO - Portfolio initialized: $3439.50 cash, 11 active bets
+2025-09-29 15:19:55,901 - src.cli.bet_monitor - INFO - Monitoring 11 positions for threshold triggers...
+2025-09-29 15:19:55,926 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-29 15:20:03,146 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-29 15:20:03,168 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-29 15:20:03,266 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-29 15:20:03,296 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-29 15:20:03,401 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-29 15:20:03,426 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-29 15:20:03,581 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-29 15:20:03,606 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-29 15:20:03,711 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-29 15:20:03,741 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-29 15:20:03,837 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-29 15:20:03,869 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-29 15:20:03,961 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-29 15:20:03,988 - src.data.market_data - INFO - Extending history for KO - fetching 7 days
+2025-09-29 15:20:04,092 - src.data.market_data - INFO - Fetched 35 records for KO from API
+2025-09-29 15:20:04,116 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-29 15:20:04,216 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-29 15:20:04,241 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-29 15:20:04,356 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-29 15:20:04,379 - src.data.market_data - INFO - Extending history for T - fetching 7 days
+2025-09-29 15:20:04,486 - src.data.market_data - INFO - Fetched 35 records for T from API
+2025-09-29 15:20:04,506 - src.cli.bet_monitor - INFO - SETTLING POSITION - T: LOSS THRESHOLD HIT: -3.97% (stop: -3.0%)
+2025-09-29 15:20:04,506 - src.portfolio.manager - INFO - Initializing portfolio manager...
+2025-09-29 15:20:04,506 - src.portfolio.manager - INFO - Loaded portfolio state: $3439.50 cash, 11 active bets
+2025-09-29 15:20:04,506 - src.portfolio.manager - INFO - Portfolio initialized: $3439.50 cash, 11 active bets
+2025-09-29 15:20:04,516 - src.portfolio.manager - INFO - Bet 524084c6-eae3-4933-ba6b-419cbde55848 closed successfully - LOST: $-24.81 P&L (after $2.78 exit fee)
+2025-09-29 15:20:04,546 - src.portfolio.manager - INFO - Portfolio manager cleanup complete
+2025-09-29 15:20:04,556 - src.data.market_data - INFO - Extending history for JNJ - fetching 7 days
+2025-09-29 15:20:04,570 - src.data.market_data - INFO - Fetched 35 records for JNJ from API
+2025-09-29 15:20:04,596 - src.data.market_data - INFO - Extending history for PLD - fetching 7 days
+2025-09-29 15:20:04,606 - src.data.market_data - INFO - Fetched 35 records for PLD from API
+2025-09-29 15:20:04,626 - src.data.market_data - INFO - Extending history for MDLZ - fetching 7 days
+2025-09-29 15:20:04,641 - src.data.market_data - INFO - Fetched 35 records for MDLZ from API
+2025-09-29 15:20:04,666 - src.data.market_data - INFO - Extending history for NVDA - fetching 7 days
+2025-09-29 15:20:04,676 - src.data.market_data - INFO - Fetched 35 records for NVDA from API
+2025-09-29 15:20:04,698 - src.data.market_data - INFO - Extending history for MU - fetching 7 days
+2025-09-29 15:20:04,711 - src.data.market_data - INFO - Fetched 35 records for MU from API
+2025-09-29 15:20:04,736 - src.data.market_data - INFO - Extending history for BAC - fetching 7 days
+2025-09-29 15:20:04,746 - src.data.market_data - INFO - Fetched 35 records for BAC from API
+2025-09-29 15:20:04,766 - src.data.market_data - INFO - Extending history for KO - fetching 7 days
+2025-09-29 15:20:04,786 - src.data.market_data - INFO - Fetched 35 records for KO from API
+2025-09-29 15:20:04,809 - src.data.market_data - INFO - Extending history for GOOGL - fetching 7 days
+2025-09-29 15:20:04,821 - src.data.market_data - INFO - Fetched 35 records for GOOGL from API
+2025-09-29 15:20:04,846 - src.data.market_data - INFO - Extending history for PM - fetching 7 days
+2025-09-29 15:20:04,858 - src.data.market_data - INFO - Fetched 35 records for PM from API
+2025-09-29 15:20:04,886 - src.data.market_data - INFO - Extending history for WFC - fetching 7 days
+2025-09-29 15:20:04,896 - src.data.market_data - INFO - Fetched 35 records for WFC from API
+2025-09-29 15:20:04,916 - src.portfolio.manager - INFO - Loaded portfolio state: $3969.98 cash, 11 active bets

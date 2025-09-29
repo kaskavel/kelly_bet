@@ -63,16 +63,21 @@ def main():
         print("Auto-refresh enabled with 15-minute intervals")
         print("Press Ctrl+C to stop the server")
         print("-" * 50)
+        print("Initializing Streamlit server...")
         
-        # Start the process
+        # Start the process with real-time output
         process = subprocess.Popen(
             cmd, 
             env=env, 
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+            stderr=subprocess.STDOUT,  # Merge stderr into stdout
+            text=True,
+            bufsize=1,  # Line buffered
+            universal_newlines=True
         )
+        
+        print("Streamlit server starting...")
         
         # Send empty email to skip setup
         try:
@@ -81,7 +86,20 @@ def main():
         except:
             pass
         
-        # Wait for the process
+        # Print output in real-time
+        try:
+            for line in iter(process.stdout.readline, ''):
+                if line:
+                    print(f"[STREAMLIT] {line.rstrip()}")
+                if "You can now view your Streamlit app" in line:
+                    print("SUCCESS: Dashboard is ready!")
+                    print("Open http://localhost:8501 in your browser")
+                    print("-" * 50)
+        except KeyboardInterrupt:
+            print("\nShutting down dashboard...")
+            process.terminate()
+            raise
+        
         process.wait()
         
     except KeyboardInterrupt:
