@@ -547,6 +547,48 @@ class PortfolioManager:
             return 0.0
         finally:
             conn.close()
+
+    async def get_bet_statistics(self) -> Dict:
+        """Get betting statistics including win rate"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            # Get total bet counts by status
+            cursor.execute('''
+            SELECT status, COUNT(*) FROM bets GROUP BY status
+            ''')
+            status_counts = dict(cursor.fetchall())
+
+            won_bets = status_counts.get(BetStatus.WON.value, 0)
+            lost_bets = status_counts.get(BetStatus.LOST.value, 0)
+            active_bets = status_counts.get(BetStatus.ALIVE.value, 0)
+
+            total_bets = won_bets + lost_bets + active_bets
+            completed_bets = won_bets + lost_bets
+            win_rate = (won_bets / completed_bets) if completed_bets > 0 else 0.0
+
+            return {
+                "total_bets": total_bets,
+                "won_bets": won_bets,
+                "lost_bets": lost_bets,
+                "active_bets": active_bets,
+                "completed_bets": completed_bets,
+                "win_rate": win_rate
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error getting bet statistics: {e}")
+            return {
+                "total_bets": 0,
+                "won_bets": 0,
+                "lost_bets": 0,
+                "active_bets": 0,
+                "completed_bets": 0,
+                "win_rate": 0.0
+            }
+        finally:
+            conn.close()
     
     async def get_alive_bets(self) -> List[Bet]:
         """Get all alive bets for monitoring"""
