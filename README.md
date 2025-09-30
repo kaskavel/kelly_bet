@@ -14,9 +14,12 @@ An intelligent trading system that uses machine learning predictions and the Kel
 
 2. **Run the System**
    ```bash
-   # Manual mode - you select which bets to place
+   # Web Dashboard (Recommended) - Full UI experience
+   python main.py --dashboard
+
+   # Manual mode - CLI interface for bet selection
    python main.py --mode manual
-   
+
    # Automated mode - system places bets automatically
    python main.py --mode automated --threshold 65
    ```
@@ -79,6 +82,52 @@ python main.py --mode automated --threshold 65
 2. If all probabilities < 50%, waits 30 minutes and repeats
 3. Fully autonomous trading with risk controls
 4. Great for backtesting and live deployment
+
+### **Web Dashboard (Recommended)**
+```bash
+python main.py --dashboard
+```
+**The complete trading experience in your browser at http://localhost:8501**
+
+#### **Features**
+- **Live Portfolio Tracking**: Real-time portfolio value, cash balance, and P&L
+- **Win Rate Analytics**: Track performance with 44.4% current win rate display
+- **Trading Opportunities**: View top ML-predicted assets with probability scores
+- **Active Bets Monitoring**: Live bet tracking with current prices and P&L
+- **Complete Bet History**: Filter by status (won/lost/alive) with detailed analytics
+- **Market Data Visualization**: Interactive charts for all 91+ tracked assets
+
+#### **Dashboard Tabs**
+
+**📊 Trading Dashboard**
+- Portfolio overview with key metrics
+- Top 10 trading opportunities with ML predictions
+- Active bets table with real-time P&L
+- Performance charts and portfolio growth
+
+**📋 All Bets**
+- Complete betting history with filters
+- Detailed bet analysis (entry/exit prices, algorithms used)
+- Performance statistics and win/loss tracking
+- Search and sort capabilities
+
+**📈 Market Data**
+- Interactive price charts with candlesticks and volume
+- Dropdown selector for 91+ S&P 500 stocks
+- Time period filters (30/60/90 days or full history)
+- Price statistics (volatility, highs/lows, performance)
+
+#### **Real ML Integration**
+Unlike simulation modes, the dashboard uses:
+- **Real LSTM Neural Networks** for price prediction
+- **Live Random Forest** ensemble algorithms
+- **Actual Technical Analysis** (SMA, RSI indicators)
+- **True Portfolio Calculations** matching CLI manual mode exactly
+
+#### **Auto-Refresh**
+- Dashboard refreshes every 15 minutes automatically
+- Real-time data updates for active positions
+- Live market price integration
 
 ## 🎛️ Configuration
 
@@ -278,4 +327,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-**Ready to start? Run `python main.py --mode manual` and begin your Kelly Criterion trading journey!** 🚀
+**Ready to start? Run `python main.py --dashboard` for the full web experience, or `python main.py --mode manual` for CLI trading!** 🚀
