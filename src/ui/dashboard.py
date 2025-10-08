@@ -21,6 +21,7 @@ try:
     from src.cli.bet_analyzer import BetAnalyzer
     from src.portfolio.manager import PortfolioManager
     from src.data.market_data import MarketDataManager
+    from src.utils.asset_names import get_display_name, get_asset_name
     import yaml
     REAL_DATA_AVAILABLE = True
 except ImportError as e:
@@ -324,6 +325,7 @@ class TradingDashboard:
                     "total_pnl": 0.0,
                     "win_rate": 0.0,
                     "total_bets": 0,
+                    "completed_bets": 0,
                     "won_bets": 0,
                     "lost_bets": 0,
                     "active_bets": 0
@@ -331,6 +333,13 @@ class TradingDashboard:
             
             # Get real portfolio data
             await self.portfolio_manager.initialize()
+
+            # Refresh portfolio state to ensure in-memory data matches database after any settlements
+            await self.portfolio_manager._load_portfolio_state()
+
+            # Update current prices for active bets to get accurate unrealized P&L
+            await self._update_active_bet_prices()
+
             portfolio_summary = await self.portfolio_manager.get_portfolio_summary()
             bet_statistics = await self.portfolio_manager.get_bet_statistics()
 
@@ -339,8 +348,10 @@ class TradingDashboard:
                 "available_capital": portfolio_summary.cash_balance,
                 "active_bets_value": portfolio_summary.active_bets_value,
                 "total_pnl": portfolio_summary.unrealized_pnl + portfolio_summary.realized_pnl,
+                "total_return": portfolio_summary.total_capital - self.config.get('trading', {}).get('initial_capital', 10000.0),
                 "win_rate": bet_statistics["win_rate"],
                 "total_bets": bet_statistics["total_bets"],
+                "completed_bets": bet_statistics["completed_bets"],
                 "won_bets": bet_statistics["won_bets"],
                 "lost_bets": bet_statistics["lost_bets"],
                 "active_bets": bet_statistics["active_bets"]
@@ -551,7 +562,63 @@ class TradingDashboard:
             st.error(f"ERROR: Failed to place bet: {e}")
             self.logger.error(f"Bet placement error: {e}")
             return False
-    
+
+    async def check_and_settle_bets(self):
+        """Check active bets and settle any that hit win/loss thresholds"""
+        try:
+            if not self.bet_monitor:
+                self.logger.warning("Bet monitor not available for settlement check")
+                return
+
+            self.logger.info("Checking for bet settlements...")
+
+            # Use the bet monitor's settlement logic from livebets CLI
+            await self.bet_monitor._monitor_and_settle_positions()
+
+            self.logger.info("Bet settlement check completed")
+
+        except Exception as e:
+            self.logger.error(f"Error during bet settlement check: {e}")
+            # Don't raise exception - settlement failures shouldn't break dashboard
+
+    async def _update_active_bet_prices(self):
+        """Update current prices for active bets to ensure accurate unrealized P&L calculations"""
+        try:
+            if not self.portfolio_manager or not self.market_data:
+                return
+
+            # Get current active bets from portfolio manager
+            active_bet_symbols = list(self.portfolio_manager.active_bets.keys())
+            if not active_bet_symbols:
+                return
+
+            self.logger.info(f"Updating prices for {len(active_bet_symbols)} active bets...")
+
+            # Update prices for each active bet
+            for bet_id, bet in self.portfolio_manager.active_bets.items():
+                try:
+                    # Get current market price
+                    recent_data = await self.market_data.get_stock_data(bet.symbol, days=2)
+                    if not recent_data.empty:
+                        current_price = float(recent_data['Close'].iloc[-1])
+
+                        # Update bet's current price and calculated values
+                        bet.current_price = current_price
+                        bet.current_value = bet.shares * current_price
+                        bet.unrealized_pnl = bet.current_value - bet.amount
+
+                        self.logger.debug(f"Updated {bet.symbol}: ${bet.current_price:.2f} (P&L: ${bet.unrealized_pnl:+.2f})")
+                    else:
+                        self.logger.warning(f"No recent data available for {bet.symbol}")
+
+                except Exception as e:
+                    self.logger.error(f"Error updating price for {bet.symbol}: {e}")
+
+            self.logger.info("Active bet price update completed")
+
+        except Exception as e:
+            self.logger.error(f"Error during active bet price update: {e}")
+
     async def refresh_data(self):
         """Refresh all dashboard data with real-time progress"""
         try:
@@ -561,24 +628,29 @@ class TradingDashboard:
             progress_bar = st.progress(0)
             status_text = st.empty()
 
+            # Step 0: Check and settle bets that hit thresholds (FIRST PRIORITY)
+            status_text.text("🎯 Checking for bet settlements...")
+            progress_bar.progress(10)
+            await self.check_and_settle_bets()
+
             # Step 1: Portfolio data
             status_text.text("Loading portfolio data...")
-            progress_bar.progress(20)
+            progress_bar.progress(25)
             st.session_state.portfolio_data = await self.get_portfolio_data()
 
             # Step 2: Active bets
             status_text.text("Loading active bets...")
-            progress_bar.progress(40)
+            progress_bar.progress(45)
             st.session_state.active_bets_data = await self.get_active_bets_data()
 
             # Step 3: All bets data
             status_text.text("Loading bet history...")
-            progress_bar.progress(60)
+            progress_bar.progress(65)
             st.session_state.all_bets_data = await self.get_all_bets_data()
 
             # Step 4: Real ML predictions (this is the slow part)
             status_text.text("🧠 Generating REAL ML predictions (this may take a few minutes)...")
-            progress_bar.progress(80)
+            progress_bar.progress(85)
 
             # Generate opportunities with optional log display
             if st.session_state.get('show_ml_logs', False):
@@ -665,9 +737,15 @@ class TradingDashboard:
                 st.rerun()
         
         with col3:
-            auto_refresh = st.toggle("Auto Refresh (15min)")
-            if auto_refresh:
+            # Auto-refresh automatically when automated mode is OFF
+            # This ensures manual monitoring has continuous updates
+            if not st.session_state.auto_mode:
+                st.write("🔄 Auto-refresh: ON (15min)")
+                st.caption("Auto-refresh is active when automated mode is off")
                 st_autorefresh(interval=15*60*1000, key="dashboard_refresh")  # 15 minutes
+            else:
+                st.write("🔄 Auto-refresh: OFF")
+                st.caption("Auto-refresh disabled in automated mode")
     
     def render_portfolio_overview(self):
         """Render portfolio overview section"""
@@ -684,7 +762,7 @@ class TradingDashboard:
             st.metric(
                 "Total Capital",
                 f"${portfolio.get('total_capital', 0):,.2f}",
-                delta=f"${portfolio.get('total_pnl', 0):+.2f}"
+                delta=f"${portfolio.get('total_return', 0):+.2f}"
             )
         
         with col2:
@@ -703,7 +781,7 @@ class TradingDashboard:
             st.metric(
                 "Win Rate",
                 f"{portfolio.get('win_rate', 0)*100:.1f}%",
-                delta=f"{portfolio.get('won_bets', 0)}/{portfolio.get('total_bets', 0)} bets"
+                delta=f"{portfolio.get('won_bets', 0)}/{portfolio.get('completed_bets', 0)} bets"
             )
     
     def render_trading_controls(self):
@@ -884,15 +962,20 @@ class TradingDashboard:
             asset_badge = "🪙" if opp.get('asset_type') == 'crypto' else "📈"
             prob_color = "🟢" if opp['final_probability'] > 70 else "🟡" if opp['final_probability'] > 60 else "🔴"
 
+            # Get full asset name for display
+            display_name = get_display_name(opp['symbol'], opp.get('asset_type', 'stock'))
+
             with st.expander(
-                f"{asset_badge} {opp['symbol']} - {prob_color} {opp['final_probability']:.1f}% "
+                f"{asset_badge} {display_name} - {prob_color} {opp['final_probability']:.1f}% "
                 f"(${opp['current_price']:,.2f})"
             ):
                 col1, col2 = st.columns(2)
 
                 with col1:
                     st.write("**Asset Information:**")
+                    full_name = get_asset_name(opp['symbol'], opp.get('asset_type', 'stock'))
                     st.write(f"• Symbol: {opp['symbol']}")
+                    st.write(f"• Name: {full_name}")
                     st.write(f"• Type: {opp.get('asset_type', 'stock').title()}")
                     st.write(f"• Current Price: ${opp['current_price']:,.2f}")
                     st.write(f"• Final Probability: {opp['final_probability']:.1f}%")
@@ -991,7 +1074,11 @@ class TradingDashboard:
         
         # Format the dataframe for display
         display_df = df.copy()
-        display_df['Symbol'] = display_df['symbol']
+        # Add asset names
+        display_df['Asset'] = display_df.apply(
+            lambda row: get_display_name(row['symbol'], row.get('asset_type', 'stock')),
+            axis=1
+        )
         display_df['Entry'] = display_df['entry_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Current'] = display_df['current_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Amount'] = display_df['amount'].apply(lambda x: f"${x:,.0f}")
@@ -1009,7 +1096,7 @@ class TradingDashboard:
             display_df['Entry Prob'] = df['probability_when_placed'].apply(lambda x: f"{x:.1f}%")
         
         # Show the table
-        columns_to_show = ['Symbol', 'Entry', 'Current', 'Amount', 'P&L', 'Win Target', 'Stop Loss', 'Duration']
+        columns_to_show = ['Asset', 'Entry', 'Current', 'Amount', 'P&L', 'Win Target', 'Stop Loss', 'Duration']
         if 'Algorithm' in display_df.columns:
             columns_to_show.append('Algorithm')
         if 'Entry Prob' in display_df.columns:
@@ -1156,12 +1243,19 @@ class TradingDashboard:
             st.info("No active bets")
             return
 
+        # Calculate and display P&L summary
+        total_unrealized_pnl = sum(bet['pnl'] for bet in alive_bets)
+        st.metric("Total Unrealized P&L", f"${total_unrealized_pnl:+,.2f}")
+
         # Create dataframe for alive bets
         df = pd.DataFrame(alive_bets)
 
         # Format display
         display_df = df.copy()
-        display_df['Symbol'] = display_df['symbol']
+        display_df['Asset'] = display_df.apply(
+            lambda row: get_display_name(row['symbol'], row.get('asset_type', 'stock')),
+            axis=1
+        )
         display_df['Entry Price'] = display_df['entry_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Current Price'] = display_df['current_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Amount'] = display_df['amount'].apply(lambda x: f"${x:,.0f}")
@@ -1171,7 +1265,7 @@ class TradingDashboard:
         display_df['Entry Prob'] = display_df['probability_when_placed'].apply(lambda x: f"{x:.1f}%")
 
         # Show compact table
-        columns_to_show = ['Symbol', 'Entry Price', 'Current Price', 'Amount', 'P&L', 'Entry Date', 'Algorithm', 'Entry Prob']
+        columns_to_show = ['Asset', 'Entry Price', 'Current Price', 'Amount', 'P&L', 'Entry Date', 'Algorithm', 'Entry Prob']
         st.dataframe(
             display_df[columns_to_show],
             use_container_width=True,
@@ -1190,7 +1284,8 @@ class TradingDashboard:
         status_filter = st.selectbox(
             "Filter by result:",
             options=["all", "won", "lost"],
-            key="closed_bets_filter"
+            key="closed_bets_filter",
+            help="Filter bets by outcome"
         )
 
         # Filter bets
@@ -1202,12 +1297,32 @@ class TradingDashboard:
             st.info(f"No {status_filter} bets found")
             return
 
+        # Calculate and display P&L summary for filtered bets
+        total_realized_pnl = sum(bet['pnl'] for bet in filtered_bets)
+        won_bets = [bet for bet in filtered_bets if bet['status'] == 'won']
+        lost_bets = [bet for bet in filtered_bets if bet['status'] == 'lost']
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Realized P&L", f"${total_realized_pnl:+,.2f}")
+        with col2:
+            if won_bets:
+                total_won_pnl = sum(bet['pnl'] for bet in won_bets)
+                st.metric("Won Bets P&L", f"${total_won_pnl:+,.2f}", delta=f"{len(won_bets)} bets")
+        with col3:
+            if lost_bets:
+                total_lost_pnl = sum(bet['pnl'] for bet in lost_bets)
+                st.metric("Lost Bets P&L", f"${total_lost_pnl:+,.2f}", delta=f"{len(lost_bets)} bets")
+
         # Create dataframe for closed bets
         df = pd.DataFrame(filtered_bets)
 
         # Format display
         display_df = df.copy()
-        display_df['Symbol'] = display_df['symbol']
+        display_df['Asset'] = display_df.apply(
+            lambda row: get_display_name(row['symbol'], row.get('asset_type', 'stock')),
+            axis=1
+        )
         display_df['Entry Price'] = display_df['entry_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Exit Price'] = display_df['exit_price'].apply(lambda x: f"${x:,.2f}" if x else "N/A")
         display_df['Amount'] = display_df['amount'].apply(lambda x: f"${x:,.0f}")
@@ -1219,7 +1334,7 @@ class TradingDashboard:
             str(x['exit_time'] - x['entry_time']).split('.')[0] if x['exit_time'] else "N/A", axis=1)
 
         # Show compact table
-        columns_to_show = ['Symbol', 'Entry Price', 'Exit Price', 'Amount', 'P&L', 'Entry Date', 'Exit Date', 'Status', 'Duration']
+        columns_to_show = ['Asset', 'Entry Price', 'Exit Price', 'Amount', 'P&L', 'Entry Date', 'Exit Date', 'Status', 'Duration']
         st.dataframe(
             display_df[columns_to_show],
             use_container_width=True,
@@ -1303,8 +1418,11 @@ class TradingDashboard:
                 st.warning("No market data available in database")
                 return
 
-            # Asset selector
-            asset_options = [f"{asset['symbol']} ({asset['asset_type']})" for asset in available_assets]
+            # Asset selector with full names
+            asset_options = [
+                f"{get_display_name(asset['symbol'], asset['asset_type'])} ({asset['asset_type']})"
+                for asset in available_assets
+            ]
             selected_asset_display = st.selectbox(
                 "Select an asset to visualize:",
                 asset_options,
@@ -1312,8 +1430,11 @@ class TradingDashboard:
             )
 
             if selected_asset_display:
-                # Extract symbol from display string
-                selected_symbol = selected_asset_display.split(' (')[0]
+                # Extract symbol from display string (format: "SYMBOL - Full Name (type)" or "SYMBOL (type)")
+                if ' - ' in selected_asset_display:
+                    selected_symbol = selected_asset_display.split(' - ')[0]
+                else:
+                    selected_symbol = selected_asset_display.split(' (')[0]
                 selected_asset = next(asset for asset in available_assets if asset['symbol'] == selected_symbol)
 
                 # Time period selector
@@ -1505,6 +1626,9 @@ class TradingDashboard:
             if df.empty:
                 return
 
+            # Ensure timestamp is properly converted to datetime
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+
             # Calculate statistics
             current_price = df['close'].iloc[-1]
             start_price = df['close'].iloc[0]
@@ -1541,8 +1665,10 @@ class TradingDashboard:
 
             with col4:
                 st.metric("Volatility (Annual)", f"{volatility:.1f}%")
-                date_range = f"{df['timestamp'].iloc[0].strftime('%Y-%m-%d')} to {df['timestamp'].iloc[-1].strftime('%Y-%m-%d')}"
-                st.metric("Date Range", date_range)
+                # Format dates safely
+                start_date = df['timestamp'].iloc[0].strftime('%Y-%m-%d')
+                end_date = df['timestamp'].iloc[-1].strftime('%Y-%m-%d')
+                st.metric("Date Range", f"{start_date} to {end_date}")
 
         except Exception as e:
             st.error(f"Error calculating statistics: {e}")
@@ -1569,10 +1695,26 @@ class TradingDashboard:
         # Render dashboard components
         self.render_header()
 
-        # Create tabs
-        tab1, tab2, tab3 = st.tabs(["Trading Dashboard", "All Bets", "Market Data"])
+        # Create persistent tab selection using radio buttons
+        if 'active_tab' not in st.session_state:
+            st.session_state.active_tab = "Trading Dashboard"
 
-        with tab1:
+        selected_tab = st.radio(
+            "Dashboard Sections:",
+            options=["Trading Dashboard", "All Bets", "Market Data"],
+            index=["Trading Dashboard", "All Bets", "Market Data"].index(st.session_state.active_tab),
+            horizontal=True,
+            key="dashboard_tab_selector"
+        )
+
+        # Update session state if tab changed
+        if selected_tab != st.session_state.active_tab:
+            st.session_state.active_tab = selected_tab
+
+        st.divider()
+
+        # Render content based on selected tab
+        if selected_tab == "Trading Dashboard":
             # Main trading dashboard content
             self.render_portfolio_overview()
             st.divider()
@@ -1591,11 +1733,11 @@ class TradingDashboard:
             st.divider()
             self.render_performance_charts()
 
-        with tab2:
+        elif selected_tab == "All Bets":
             # Bets tab content
             self.render_bets_tab()
 
-        with tab3:
+        elif selected_tab == "Market Data":
             # Market data visualization tab
             self.render_market_data_tab()
 

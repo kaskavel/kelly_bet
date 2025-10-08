@@ -503,6 +503,9 @@ class PortfolioManager:
     
     async def _record_portfolio_snapshot(self, notes: str = ""):
         """Record current portfolio state"""
+        # Refresh cash balance from database before taking snapshot
+        await self._load_portfolio_state()
+
         summary = await self.get_portfolio_summary()
         
         conn = sqlite3.connect(self.db_path)

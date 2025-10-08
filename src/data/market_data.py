@@ -1,6 +1,6 @@
 """
 Market data fetching and caching system
-Handles stock data from yfinance with local database caching.
+Handles stock data from yfinance and crypto data from CCXT with local database caching.
 """
 
 import asyncio
@@ -8,6 +8,7 @@ import logging
 import sqlite3
 import pandas as pd
 import yfinance as yf
+import ccxt
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from pathlib import Path
@@ -18,9 +19,16 @@ class MarketDataManager:
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.db_path = Path(config['database']['sqlite']['path'])
-        
+
         # Cache settings
         self.cache_duration = config['data_sources']['stocks']['cache_duration']
+
+        # Initialize crypto exchange (Binance for comprehensive coverage)
+        self.crypto_exchange = ccxt.binance({
+            'sandbox': False,  # Use live data
+            'enableRateLimit': True,  # Respect rate limits
+            'timeout': 30000,  # 30 second timeout
+        })
         
     async def initialize(self):
         """Initialize database and create tables"""
@@ -370,42 +378,285 @@ class MarketDataManager:
                     self.logger.error(f"Failed to store data for {symbol} after {max_retries} attempts: {e}")
     
     async def get_latest_data(self, assets: List[Dict]) -> Dict[str, pd.DataFrame]:
-        """Get latest data for multiple assets"""
+        """Get latest data for multiple assets (stocks and crypto)"""
         self.logger.info(f"Fetching data for {len(assets)} assets")
-        
-        # Filter for stocks only for now
+
+        # Separate stocks and crypto
         stock_assets = [asset for asset in assets if asset['type'] == 'stock']
-        
+        crypto_assets = [asset for asset in assets if asset['type'] == 'crypto']
+
         results = {}
-        
+
         # Process stocks in batches to respect API limits
-        batch_size = 10
-        for i in range(0, len(stock_assets), batch_size):
-            batch = stock_assets[i:i + batch_size]
-            
-            # Process batch concurrently
-            tasks = [
-                self.get_stock_data(asset['symbol'], days=90)
-                for asset in batch
-            ]
-            
-            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-            
-            # Store results
-            for asset, data in zip(batch, batch_results):
-                if isinstance(data, Exception):
-                    self.logger.error(f"Error fetching {asset['symbol']}: {data}")
-                    results[asset['symbol']] = pd.DataFrame()
-                else:
-                    results[asset['symbol']] = data
-            
-            # Small delay between batches to be nice to the API
-            if i + batch_size < len(stock_assets):
-                await asyncio.sleep(1)
-        
-        self.logger.info(f"Retrieved data for {len([k for k, v in results.items() if not v.empty])} assets")
+        if stock_assets:
+            self.logger.info(f"Processing {len(stock_assets)} stock assets")
+            batch_size = 10
+            for i in range(0, len(stock_assets), batch_size):
+                batch = stock_assets[i:i + batch_size]
+
+                # Process batch concurrently
+                tasks = [
+                    self.get_stock_data(asset['symbol'], days=90)
+                    for asset in batch
+                ]
+
+                batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                # Store results
+                for asset, data in zip(batch, batch_results):
+                    if isinstance(data, Exception):
+                        self.logger.error(f"Error fetching stock {asset['symbol']}: {data}")
+                        results[asset['symbol']] = pd.DataFrame()
+                    else:
+                        results[asset['symbol']] = data
+
+                # Small delay between batches to be nice to the API
+                if i + batch_size < len(stock_assets):
+                    await asyncio.sleep(1)
+
+        # Process crypto assets
+        if crypto_assets:
+            self.logger.info(f"Processing {len(crypto_assets)} crypto assets")
+            batch_size = 5  # Smaller batches for crypto to respect rate limits
+            for i in range(0, len(crypto_assets), batch_size):
+                batch = crypto_assets[i:i + batch_size]
+
+                # Process batch concurrently
+                tasks = [
+                    self.get_crypto_data(asset['symbol'], days=90)
+                    for asset in batch
+                ]
+
+                batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                # Store results
+                for asset, data in zip(batch, batch_results):
+                    if isinstance(data, Exception):
+                        self.logger.error(f"Error fetching crypto {asset['symbol']}: {data}")
+                        results[asset['symbol']] = pd.DataFrame()
+                    else:
+                        results[asset['symbol']] = data
+
+                # Longer delay between crypto batches (stricter rate limits)
+                if i + batch_size < len(crypto_assets):
+                    await asyncio.sleep(2)
+
+        successful_fetches = len([k for k, v in results.items() if not v.empty])
+        self.logger.info(f"Retrieved data for {successful_fetches}/{len(assets)} assets")
         return results
-    
+
+    async def get_crypto_data(self, symbol: str, days: int = 90, force_refresh: bool = False) -> pd.DataFrame:
+        """
+        Get crypto data for a symbol using CCXT, with database caching
+
+        Args:
+            symbol: Crypto symbol (e.g., 'BTC', 'ETH')
+            days: Number of days of historical data
+            force_refresh: Force API call even if cached data exists
+        """
+        self.logger.debug(f"Fetching crypto data for {symbol} (days={days}, force_refresh={force_refresh})")
+
+        try:
+            # Check cache first unless force refresh
+            if not force_refresh:
+                cached_data = await self._get_cached_crypto_data(symbol, days)
+                if not cached_data.empty:
+                    self.logger.debug(f"Using cached crypto data for {symbol}")
+                    return cached_data
+
+            # Fetch from Binance API
+            symbol_pair = f"{symbol}/USDT"  # Convert to Binance pair format
+
+            # Calculate timeframe - CCXT uses different timeframe notation
+            # Use 30m for consistency with stock data
+            timeframe = '30m'
+
+            # Calculate since timestamp
+            since_timestamp = int((datetime.now() - timedelta(days=days)).timestamp() * 1000)
+
+            self.logger.debug(f"Fetching {symbol_pair} from Binance API...")
+
+            # Fetch OHLCV data
+            ohlcv_data = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: self.crypto_exchange.fetch_ohlcv(
+                    symbol_pair,
+                    timeframe,
+                    since=since_timestamp,
+                    limit=1000  # Max limit for most exchanges
+                )
+            )
+
+            if not ohlcv_data:
+                self.logger.warning(f"No crypto data returned for {symbol}")
+                return pd.DataFrame()
+
+            # Convert to DataFrame
+            df = pd.DataFrame(ohlcv_data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+
+            # Convert timestamp to datetime
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+
+            # Ensure numeric types
+            numeric_columns = ['open', 'high', 'low', 'close', 'volume']
+            for col in numeric_columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
+            # Remove any rows with NaN values
+            df = df.dropna()
+
+            if df.empty:
+                self.logger.warning(f"No valid crypto data for {symbol} after processing")
+                return pd.DataFrame()
+
+            # Store in database
+            await self._store_crypto_data(symbol, df)
+
+            self.logger.info(f"Retrieved {len(df)} crypto data points for {symbol}")
+            return df
+
+        except Exception as e:
+            self.logger.error(f"Error fetching crypto data for {symbol}: {e}")
+            return pd.DataFrame()
+
+    async def _get_cached_crypto_data(self, symbol: str, days: int) -> pd.DataFrame:
+        """Get cached crypto data if recent enough"""
+        try:
+            # Check if asset exists in database
+            asset_id = await self._get_or_create_asset_id(symbol, 'crypto')
+            if not asset_id:
+                return pd.DataFrame()
+
+            # Get recent data
+            cutoff_time = datetime.now() - timedelta(days=days)
+
+            conn = sqlite3.connect(self.db_path)
+            df = pd.read_sql_query('''
+                SELECT timestamp, open, high, low, close, volume
+                FROM price_data
+                WHERE asset_id = ? AND timestamp >= ?
+                ORDER BY timestamp
+            ''', conn, params=(asset_id, cutoff_time.isoformat()))
+            conn.close()
+
+            if not df.empty:
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+                # Check if data is recent enough (within last 2 hours)
+                latest_time = df['timestamp'].max()
+                if latest_time > datetime.now() - timedelta(hours=2):
+                    self.logger.debug(f"Using cached crypto data for {symbol} (latest: {latest_time})")
+                    return df
+
+            return pd.DataFrame()
+
+        except Exception as e:
+            self.logger.error(f"Error getting cached crypto data for {symbol}: {e}")
+            return pd.DataFrame()
+
+    async def _store_crypto_data(self, symbol: str, df: pd.DataFrame):
+        """Store crypto data in database"""
+        if df.empty:
+            return
+
+        try:
+            # Get or create asset ID
+            asset_id = await self._get_or_create_asset_id(symbol, 'crypto')
+            if not asset_id:
+                self.logger.error(f"Could not get asset ID for crypto {symbol}")
+                return
+
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # Insert data
+            for _, row in df.iterrows():
+                cursor.execute('''
+                    INSERT OR REPLACE INTO price_data
+                    (asset_id, timestamp, open, high, low, close, volume, interval)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    asset_id,
+                    row['timestamp'].isoformat(),
+                    float(row['open']),
+                    float(row['high']),
+                    float(row['low']),
+                    float(row['close']),
+                    int(row['volume']),
+                    '30min'
+                ))
+
+            conn.commit()
+            conn.close()
+
+            self.logger.debug(f"Stored {len(df)} crypto data points for {symbol}")
+
+        except Exception as e:
+            self.logger.error(f"Error storing crypto data for {symbol}: {e}")
+
+    async def _get_or_create_asset_id(self, symbol: str, asset_type: str) -> Optional[int]:
+        """Get existing asset ID or create new asset and return its ID"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # Try to get existing asset
+            cursor.execute('SELECT asset_id FROM assets WHERE symbol = ? AND asset_type = ?', (symbol, asset_type))
+            result = cursor.fetchone()
+
+            if result:
+                conn.close()
+                return result[0]
+
+            # Create new asset
+            cursor.execute('''
+                INSERT INTO assets (symbol, asset_type, name, last_updated)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', (symbol, asset_type, None))
+
+            asset_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+
+            self.logger.debug(f"Created new asset: {symbol} ({asset_type}) with ID {asset_id}")
+            return asset_id
+
+        except Exception as e:
+            self.logger.error(f"Error getting/creating asset ID for {symbol}: {e}")
+            return None
+
+    async def update_asset_names(self):
+        """Update asset names in database using the asset_names utility"""
+        from ..utils.asset_names import get_asset_name
+
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # Get all assets that don't have names or have empty names
+            cursor.execute('SELECT asset_id, symbol, asset_type FROM assets WHERE name IS NULL OR name = ""')
+            assets_to_update = cursor.fetchall()
+
+            self.logger.info(f"Updating names for {len(assets_to_update)} assets...")
+
+            for asset_id, symbol, asset_type in assets_to_update:
+                # Get the full name
+                full_name = get_asset_name(symbol, asset_type)
+
+                # Update the database
+                cursor.execute(
+                    'UPDATE assets SET name = ?, last_updated = CURRENT_TIMESTAMP WHERE asset_id = ?',
+                    (full_name, asset_id)
+                )
+
+            conn.commit()
+            conn.close()
+
+            self.logger.info(f"Successfully updated names for {len(assets_to_update)} assets")
+
+        except Exception as e:
+            self.logger.error(f"Error updating asset names: {e}")
+
     async def cleanup(self):
         """Clean up resources"""
         # Could implement data retention cleanup here
