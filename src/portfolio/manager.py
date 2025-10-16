@@ -75,7 +75,7 @@ class PortfolioManager:
         self.max_single_bet_fraction = config.get('trading', {}).get('max_bet_fraction', 0.1)  # 10%
         
         # Trading fees
-        self.trading_fee_percentage = config.get('trading', {}).get('trading_fee_percentage', 0.5)  # 0.5%
+        self.trading_fee_percentage = config.get('trading', {}).get('trading_fee_percentage', 0.25)  # 0.25%
     
     async def initialize(self):
         """Initialize portfolio manager and load existing state"""
@@ -315,11 +315,11 @@ class PortfolioManager:
         new_balance = self.cash_balance - bet_amount
         await self._update_cash_balance(new_balance, f"Bet entry: {symbol}", bet_id, 'bet_entry')
         self.cash_balance = new_balance
-        
+
         # Add to active bets
         self.active_bets[bet_id] = bet
-        
-        # Record portfolio snapshot
+
+        # Record portfolio snapshot (cash balance should already be correct in memory)
         await self._record_portfolio_snapshot(f"Placed bet: {symbol}")
         
         self.logger.info(f"Bet placed: {bet_id} - {symbol} ${bet_amount:.2f} "
@@ -479,19 +479,20 @@ class PortfolioManager:
         finally:
             conn.close()
     
-    async def _update_cash_balance(self, new_balance: float, description: str, 
+    async def _update_cash_balance(self, new_balance: float, description: str,
                                  bet_id: Optional[str] = None, transaction_type: str = 'manual'):
         """Update cash balance and record transaction"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         try:
             amount = new_balance - self.cash_balance
-            
+            timestamp = datetime.now().isoformat()
+
             cursor.execute('''
-            INSERT INTO cash_transactions (amount, balance_after, description, bet_id, transaction_type)
-            VALUES (?, ?, ?, ?, ?)
-            ''', (amount, new_balance, description, bet_id, transaction_type))
+            INSERT INTO cash_transactions (timestamp, amount, balance_after, description, bet_id, transaction_type)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ''', (timestamp, amount, new_balance, description, bet_id, transaction_type))
             
             conn.commit()
             
@@ -503,9 +504,6 @@ class PortfolioManager:
     
     async def _record_portfolio_snapshot(self, notes: str = ""):
         """Record current portfolio state"""
-        # Refresh cash balance from database before taking snapshot
-        await self._load_portfolio_state()
-
         summary = await self.get_portfolio_summary()
         
         conn = sqlite3.connect(self.db_path)

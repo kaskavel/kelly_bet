@@ -169,8 +169,8 @@ class TradingDashboard:
 
             opportunities = []
 
-            # Process all assets (limit to first 20 for UI performance, but use REAL predictions)
-            assets_to_process = all_assets[:20]
+            # Process all assets with REAL ML predictions
+            assets_to_process = all_assets
             self.logger.info(f"Processing {len(assets_to_process)} assets with REAL ML predictions...")
 
             # Get market data for all assets first
@@ -242,27 +242,50 @@ class TradingDashboard:
                                             algorithms_dict['random_forest'] = final_probability * 0.98  # Fallback
                                         else:
                                             algorithms_dict['random_forest'] = algo_prob
-                                    elif algo_name in ['sma', 'rsi']:
+                                    elif algo_name == 'sma':
                                         if algo_error:
-                                            failed_algorithms.append(f"Technical: {algo_error}")
-                                            algorithms_dict['svm'] = final_probability * 1.02  # Fallback
+                                            failed_algorithms.append(f"SMA: {algo_error}")
+                                            algorithms_dict['sma'] = final_probability * 1.01  # Fallback
                                         else:
-                                            algorithms_dict['svm'] = algo_prob  # Use technical indicators as SVM
+                                            algorithms_dict['sma'] = algo_prob
+                                    elif algo_name == 'rsi':
+                                        if algo_error:
+                                            failed_algorithms.append(f"RSI: {algo_error}")
+                                            algorithms_dict['rsi'] = final_probability * 0.99  # Fallback
+                                        else:
+                                            algorithms_dict['rsi'] = algo_prob
                                     elif algo_name == 'regression':
                                         if algo_error:
                                             failed_algorithms.append(f"Regression: {algo_error}")
-                                        # Don't use regression for display, but log if it failed
+                                            algorithms_dict['regression'] = final_probability * 0.97  # Fallback
+                                        else:
+                                            algorithms_dict['regression'] = algo_prob
+                                    elif algo_name == 'svm':
+                                        if algo_error:
+                                            failed_algorithms.append(f"SVM: {algo_error}")
+                                            algorithms_dict['svm'] = final_probability * 1.02  # Fallback
+                                        else:
+                                            algorithms_dict['svm'] = algo_prob
 
-                            # Ensure we have all three algorithms (fill missing with ensemble estimate)
+                            # Ensure we have all six algorithms (fill missing with ensemble estimate)
                             if 'lstm' not in algorithms_dict:
                                 algorithms_dict['lstm'] = final_probability * 1.05  # Slightly higher estimate
                                 failed_algorithms.append("LSTM: Model not available")
                             if 'random_forest' not in algorithms_dict:
                                 algorithms_dict['random_forest'] = final_probability * 0.98  # Slightly lower
                                 failed_algorithms.append("Random Forest: Model not available")
+                            if 'sma' not in algorithms_dict:
+                                algorithms_dict['sma'] = final_probability * 1.01  # Technical estimate
+                                failed_algorithms.append("SMA: Model not available")
+                            if 'rsi' not in algorithms_dict:
+                                algorithms_dict['rsi'] = final_probability * 0.99  # Technical estimate
+                                failed_algorithms.append("RSI: Model not available")
+                            if 'regression' not in algorithms_dict:
+                                algorithms_dict['regression'] = final_probability * 0.97  # Conservative estimate
+                                failed_algorithms.append("Regression: Model not available")
                             if 'svm' not in algorithms_dict:
                                 algorithms_dict['svm'] = final_probability * 1.02  # Slightly higher
-                                failed_algorithms.append("SVM/Technical: Model not available")
+                                failed_algorithms.append("SVM: Model not available")
 
                             # Calculate Kelly recommendation using REAL probability
                             kelly_rec = kelly_calc.calculate_bet_size(
@@ -342,6 +365,9 @@ class TradingDashboard:
 
             portfolio_summary = await self.portfolio_manager.get_portfolio_summary()
             bet_statistics = await self.portfolio_manager.get_bet_statistics()
+
+            # Debug logging to see what values we're actually getting
+            self.logger.info(f"Portfolio data - Cash: ${portfolio_summary.cash_balance:.2f}, Total: ${portfolio_summary.total_capital:.2f}, Active: ${portfolio_summary.active_bets_value:.2f}")
 
             return {
                 "total_capital": portfolio_summary.total_capital,
@@ -529,6 +555,37 @@ class TradingDashboard:
             self.logger.error(f"All bets data error: {e}")
             return [], []
     
+    async def settle_bet_manually(self, bet_id: str, symbol: str, current_price: float) -> bool:
+        """Manually settle a bet at current market price"""
+        try:
+            if not self.portfolio_manager:
+                st.error("Portfolio manager not available")
+                return False
+
+            await self.portfolio_manager.initialize()
+
+            # Find the bet and close it manually
+            if bet_id in self.portfolio_manager.active_bets:
+                # Update the current price first
+                bet = self.portfolio_manager.active_bets[bet_id]
+                bet.current_price = current_price
+                bet.current_value = bet.shares * current_price
+                bet.unrealized_pnl = bet.current_value - bet.amount
+
+                # Close the bet manually (user initiated)
+                await self.portfolio_manager.close_bet(bet_id, "manual_settlement", current_price)
+
+                # Refresh data
+                await self.refresh_data()
+                return True
+            else:
+                st.error(f"Bet {bet_id} not found in active bets")
+                return False
+
+        except Exception as e:
+            st.error(f"Failed to settle bet: {e}")
+            return False
+
     async def place_bet(self, symbol: str, probability: float, current_price: float) -> bool:
         """Place a bet for the given symbol using real portfolio manager"""
         try:
@@ -737,12 +794,10 @@ class TradingDashboard:
                 st.rerun()
         
         with col3:
-            # Auto-refresh automatically when automated mode is OFF
-            # This ensures manual monitoring has continuous updates
+            # Auto-refresh status display only
             if not st.session_state.auto_mode:
                 st.write("🔄 Auto-refresh: ON (15min)")
                 st.caption("Auto-refresh is active when automated mode is off")
-                st_autorefresh(interval=15*60*1000, key="dashboard_refresh")  # 15 minutes
             else:
                 st.write("🔄 Auto-refresh: OFF")
                 st.caption("Auto-refresh disabled in automated mode")
@@ -837,8 +892,8 @@ class TradingDashboard:
         with col2:
             min_probability = st.slider(
                 "Min Probability:",
-                min_value=45.0,
-                max_value=85.0,
+                min_value=0.0,
+                max_value=100.0,
                 value=50.0,
                 step=1.0,
                 key="min_prob_filter"
@@ -905,51 +960,71 @@ class TradingDashboard:
                 'Recommended': f"${opp['recommended_amount']:,.0f}" if opp['is_favorable'] else "Not Favorable",
                 'LSTM': f"{opp['algorithms']['lstm']:.1f}%",
                 'RF': f"{opp['algorithms']['random_forest']:.1f}%",
+                'SMA': f"{opp['algorithms']['sma']:.1f}%",
+                'RSI': f"{opp['algorithms']['rsi']:.1f}%",
+                'Regression': f"{opp['algorithms']['regression']:.1f}%",
                 'SVM': f"{opp['algorithms']['svm']:.1f}%"
             })
 
-        df = pd.DataFrame(df_data)
+        # Display table with Place Bet buttons
+        if df_data:
+            # Show header
+            col_headers = ['Symbol', 'Type', 'Price', 'Final Prob', 'Kelly %', 'Recommended', 'LSTM', 'RF', 'SMA', 'RSI', 'Regression', 'SVM', 'Action']
+            header_cols = st.columns([1, 0.7, 1, 1, 1, 1.2, 0.8, 0.8, 0.8, 0.8, 1, 0.8, 1])
+            for i, header in enumerate(col_headers):
+                with header_cols[i]:
+                    st.write(f"**{header}**")
 
-        # Display the table
-        st.dataframe(
-            df,
-            use_container_width=True,
-            height=600
-        )
+            st.divider()
 
-        # Add bet placement section for top opportunities
-        st.subheader("Quick Bet Placement")
-        favorable_opps = [opp for opp in opportunities if opp['is_favorable']][:5]
+            # Show data rows with buttons
+            for idx, (opp, row_data) in enumerate(zip(opportunities, df_data)):
+                cols = st.columns([1, 0.7, 1, 1, 1, 1.2, 0.8, 0.8, 0.8, 0.8, 1, 0.8, 1])
 
-        if favorable_opps:
-            for idx, opp in enumerate(favorable_opps):
-                col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
-
-                with col1:
+                with cols[0]:
                     asset_badge = "🪙" if opp.get('asset_type') == 'crypto' else "📈"
-                    st.write(f"{asset_badge} **{opp['symbol']}**")
+                    st.write(f"{asset_badge} {row_data['Symbol']}")
+                with cols[1]:
+                    st.write(row_data['Type'])
+                with cols[2]:
+                    st.write(row_data['Price'])
+                with cols[3]:
+                    prob_color = "🟢" if opp['final_probability'] > 70 else "🟡" if opp['final_probability'] > 60 else "🔴"
+                    st.write(f"{prob_color} {row_data['Final Prob']}")
+                with cols[4]:
+                    st.write(row_data['Kelly %'])
+                with cols[5]:
+                    st.write(row_data['Recommended'])
+                with cols[6]:
+                    st.write(row_data['LSTM'])
+                with cols[7]:
+                    st.write(row_data['RF'])
+                with cols[8]:
+                    st.write(row_data['SMA'])
+                with cols[9]:
+                    st.write(row_data['RSI'])
+                with cols[10]:
+                    st.write(row_data['Regression'])
+                with cols[11]:
+                    st.write(row_data['SVM'])
+                with cols[12]:
+                    if opp['is_favorable']:
+                        if st.button(f"Place Bet", key=f"place_bet_{idx}_{opp['symbol']}"):
+                            success = asyncio.run(self.place_bet(
+                                symbol=opp['symbol'],
+                                probability=opp['final_probability'],
+                                current_price=opp['current_price']
+                            ))
+                            if success:
+                                st.rerun()
+                    else:
+                        st.write("—")
 
-                with col2:
-                    prob_color = "green" if opp['final_probability'] > 70 else "orange" if opp['final_probability'] > 60 else "red"
-                    st.markdown(f"<span style='color:{prob_color}'>{opp['final_probability']:.1f}%</span>", unsafe_allow_html=True)
-
-                with col3:
-                    st.write(f"{opp['kelly_fraction']*100:.1f}%")
-
-                with col4:
-                    st.write(f"${opp['recommended_amount']:,.0f}")
-
-                with col5:
-                    if st.button(f"Place Bet", key=f"bet_{idx}"):
-                        success = asyncio.run(self.place_bet(
-                            symbol=opp['symbol'],
-                            probability=opp['final_probability'],
-                            current_price=opp['current_price']
-                        ))
-                        if success:
-                            st.rerun()
+                if idx < len(df_data) - 1:  # Don't add divider after last row
+                    st.divider()
         else:
-            st.info("No favorable opportunities found with current filters.")
+            st.info("No opportunities available.")
+
 
     def render_detailed_opportunities(self, opportunities: List[Dict]):
         """Render opportunities with detailed algorithm breakdowns"""
@@ -1013,16 +1088,49 @@ class TradingDashboard:
                         rf_status = ""
                     st.write(f"• Random Forest: {rf_color} {rf_prob:.1f}%{rf_status}")
 
-                    # SVM/Technical
+                    # SMA
+                    sma_prob = opp['algorithms']['sma']
+                    sma_failed = any("SMA" in fail for fail in opp.get('failed_algorithms', []))
+                    if sma_failed:
+                        sma_color = "⚠️"
+                        sma_status = " (Fallback - model error)"
+                    else:
+                        sma_color = "🟢" if sma_prob > 60 else "🟡" if sma_prob > 55 else "🔴"
+                        sma_status = ""
+                    st.write(f"• SMA: {sma_color} {sma_prob:.1f}%{sma_status}")
+
+                    # RSI
+                    rsi_prob = opp['algorithms']['rsi']
+                    rsi_failed = any("RSI" in fail for fail in opp.get('failed_algorithms', []))
+                    if rsi_failed:
+                        rsi_color = "⚠️"
+                        rsi_status = " (Fallback - model error)"
+                    else:
+                        rsi_color = "🟢" if rsi_prob > 60 else "🟡" if rsi_prob > 55 else "🔴"
+                        rsi_status = ""
+                    st.write(f"• RSI: {rsi_color} {rsi_prob:.1f}%{rsi_status}")
+
+                    # Regression
+                    regression_prob = opp['algorithms']['regression']
+                    regression_failed = any("Regression" in fail for fail in opp.get('failed_algorithms', []))
+                    if regression_failed:
+                        regression_color = "⚠️"
+                        regression_status = " (Fallback - model error)"
+                    else:
+                        regression_color = "🟢" if regression_prob > 60 else "🟡" if regression_prob > 55 else "🔴"
+                        regression_status = ""
+                    st.write(f"• Regression: {regression_color} {regression_prob:.1f}%{regression_status}")
+
+                    # SVM
                     svm_prob = opp['algorithms']['svm']
-                    svm_failed = any("SVM" in fail or "Technical" in fail for fail in opp.get('failed_algorithms', []))
+                    svm_failed = any("SVM" in fail for fail in opp.get('failed_algorithms', []))
                     if svm_failed:
                         svm_color = "⚠️"
                         svm_status = " (Fallback - model error)"
                     else:
                         svm_color = "🟢" if svm_prob > 60 else "🟡" if svm_prob > 55 else "🔴"
                         svm_status = ""
-                    st.write(f"• SVM/Technical: {svm_color} {svm_prob:.1f}%{svm_status}")
+                    st.write(f"• SVM: {svm_color} {svm_prob:.1f}%{svm_status}")
 
                     # Show algorithm failures if any
                     if opp.get('failed_algorithms'):
@@ -1031,9 +1139,12 @@ class TradingDashboard:
                             st.write(f"⚠️ {failure}")
 
                     st.write("**Ensemble Calculation:**")
-                    st.write(f"• LSTM × 40%: {lstm_prob:.1f}% × 0.4 = {lstm_prob * 0.4:.1f}%")
-                    st.write(f"• RF × 35%: {rf_prob:.1f}% × 0.35 = {rf_prob * 0.35:.1f}%")
-                    st.write(f"• SVM × 25%: {svm_prob:.1f}% × 0.25 = {svm_prob * 0.25:.1f}%")
+                    st.write(f"• LSTM × 25%: {lstm_prob:.1f}% × 0.25 = {lstm_prob * 0.25:.1f}%")
+                    st.write(f"• Random Forest × 20%: {rf_prob:.1f}% × 0.20 = {rf_prob * 0.20:.1f}%")
+                    st.write(f"• SMA × 15%: {sma_prob:.1f}% × 0.15 = {sma_prob * 0.15:.1f}%")
+                    st.write(f"• RSI × 15%: {rsi_prob:.1f}% × 0.15 = {rsi_prob * 0.15:.1f}%")
+                    st.write(f"• Regression × 15%: {regression_prob:.1f}% × 0.15 = {regression_prob * 0.15:.1f}%")
+                    st.write(f"• SVM × 10%: {svm_prob:.1f}% × 0.10 = {svm_prob * 0.10:.1f}%")
                     st.write(f"• **Final: {opp['final_probability']:.1f}%**")
 
                 # Bet placement button
@@ -1069,9 +1180,12 @@ class TradingDashboard:
         with col3:
             st.metric("Avg Return", f"{avg_pnl_pct:+.1f}%")
         
-        # Detailed table
+        # Detailed table with fees calculation
         df = pd.DataFrame(bets)
-        
+
+        # Calculate fees (entry + exit fees from config)
+        fee_percentage = self.config.get('trading', {}).get('trading_fee_percentage', 0.25)  # Default 0.25% if not in config
+
         # Format the dataframe for display
         display_df = df.copy()
         # Add asset names
@@ -1082,30 +1196,87 @@ class TradingDashboard:
         display_df['Entry'] = display_df['entry_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Current'] = display_df['current_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Amount'] = display_df['amount'].apply(lambda x: f"${x:,.0f}")
+
+        # Calculate fees paid (entry fee + estimated exit fee)
+        display_df['Fees Paid'] = display_df.apply(
+            lambda row: f"${(row['amount'] * fee_percentage / 100) + ((row['shares'] * row['current_price']) * fee_percentage / 100):.2f}",
+            axis=1
+        )
+
         display_df['P&L'] = display_df.apply(lambda x: f"${x['pnl']:+.2f} ({x['pnl_pct']:+.1f}%)", axis=1)
+
+        # Calculate P&L minus fees
+        display_df['P&L - Fees'] = display_df.apply(
+            lambda row: f"${(row['pnl'] - (row['amount'] * fee_percentage / 100) - ((row['shares'] * row['current_price']) * fee_percentage / 100)):+.2f}",
+            axis=1
+        )
+
         display_df['Win Target'] = display_df['win_threshold'].apply(lambda x: f"${x:,.2f}")
         display_df['Stop Loss'] = display_df['loss_threshold'].apply(lambda x: f"${x:,.2f}")
         display_df['Duration'] = display_df['entry_time'].apply(
             lambda x: str(datetime.now() - x).split('.')[0] if isinstance(x, datetime) else "N/A"
         )
-        
+
         # Add algorithm and probability if available
         if 'algorithm_used' in df.columns:
             display_df['Algorithm'] = df['algorithm_used']
         if 'probability_when_placed' in df.columns:
             display_df['Entry Prob'] = df['probability_when_placed'].apply(lambda x: f"{x:.1f}%")
-        
-        # Show the table
-        columns_to_show = ['Asset', 'Entry', 'Current', 'Amount', 'P&L', 'Win Target', 'Stop Loss', 'Duration']
+
+        # Show the table with new columns
+        columns_to_show = ['Asset', 'Entry', 'Current', 'Amount', 'Fees Paid', 'P&L', 'P&L - Fees', 'Win Target', 'Stop Loss', 'Duration']
         if 'Algorithm' in display_df.columns:
             columns_to_show.append('Algorithm')
         if 'Entry Prob' in display_df.columns:
             columns_to_show.append('Entry Prob')
             
-        st.dataframe(
-            display_df[columns_to_show],
-            use_container_width=True
-        )
+        # Display each bet with settle button
+        for idx, bet in df.iterrows():
+            with st.expander(f"📈 {get_display_name(bet['symbol'], bet.get('asset_type', 'stock'))} - {bet['pnl']:+.2f} P&L"):
+                col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
+
+                with col1:
+                    st.write(f"**Amount:** ${bet['amount']:,.0f}")
+                    st.write(f"**Entry:** ${bet['entry_price']:,.2f} → **Current:** ${bet['current_price']:,.2f}")
+                    fee_paid = (bet['amount'] * fee_percentage / 100) + ((bet['shares'] * bet['current_price']) * fee_percentage / 100)
+                    st.write(f"**Fees Paid:** ${fee_paid:.2f}")
+
+                with col2:
+                    st.write(f"**P&L:** ${bet['pnl']:+.2f}")
+                    pnl_after_fees = bet['pnl'] - fee_paid
+                    st.write(f"**P&L - Fees:** ${pnl_after_fees:+.2f}")
+
+                with col3:
+                    st.write(f"**Win Target:** ${bet['win_threshold']:,.2f}")
+                    st.write(f"**Stop Loss:** ${bet['loss_threshold']:,.2f}")
+
+                with col4:
+                    duration = str(datetime.now() - bet['entry_time']).split('.')[0] if isinstance(bet['entry_time'], datetime) else "N/A"
+                    st.write(f"**Duration:** {duration}")
+                    if 'algorithm_used' in bet and bet['algorithm_used']:
+                        st.write(f"**Algorithm:** {bet['algorithm_used']}")
+
+                with col5:
+                    # Settle Bet button
+                    if st.button(f"🔄 Settle Bet", key=f"settle_{bet['bet_id']}", help="Manually settle this bet at current market price"):
+                        if asyncio.run(self.settle_bet_manually(bet['bet_id'], bet['symbol'], bet['current_price'])):
+                            st.success(f"Bet {bet['symbol']} settled successfully!")
+                            st.rerun()
+
+        # Summary row with totals
+        total_fees = sum((bet['amount'] * fee_percentage / 100) + ((bet['shares'] * bet['current_price']) * fee_percentage / 100) for _, bet in df.iterrows())
+        total_pnl_after_fees = total_pnl - total_fees
+
+        st.divider()
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Invested", f"${sum(bet['amount'] for _, bet in df.iterrows()):,.2f}")
+        with col2:
+            st.metric("Total Fees", f"${total_fees:.2f}")
+        with col3:
+            st.metric("Total P&L", f"${total_pnl:+,.2f}")
+        with col4:
+            st.metric("Total P&L - Fees", f"${total_pnl_after_fees:+,.2f}")
     
     def render_performance_charts(self):
         """Render performance visualization section"""
@@ -1174,7 +1345,7 @@ class TradingDashboard:
             )
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
         # Portfolio statistics
         col1, col2, col3 = st.columns(3)
@@ -1226,14 +1397,13 @@ class TradingDashboard:
 
         st.divider()
 
-        # Create two sections
-        col1, col2 = st.columns(2)
+        # Active Bets section (on top)
+        self.render_alive_bets_section(alive_bets)
 
-        with col1:
-            self.render_alive_bets_section(alive_bets)
+        st.divider()
 
-        with col2:
-            self.render_closed_bets_section(closed_bets)
+        # Closed Bets section (underneath Active Bets)
+        self.render_closed_bets_section(closed_bets)
 
     def render_alive_bets_section(self, alive_bets: List[Dict]):
         """Render alive bets section"""
@@ -1243,9 +1413,22 @@ class TradingDashboard:
             st.info("No active bets")
             return
 
-        # Calculate and display P&L summary
+        # Calculate fees and P&L summary
+        fee_percentage = self.config.get('trading', {}).get('trading_fee_percentage', 0.25)  # Default 0.25% if not in config
         total_unrealized_pnl = sum(bet['pnl'] for bet in alive_bets)
-        st.metric("Total Unrealized P&L", f"${total_unrealized_pnl:+,.2f}")
+
+        # Calculate total fees for active bets (entry + estimated exit fees)
+        total_fees = sum((bet['amount'] * fee_percentage / 100) + ((bet['shares'] * bet['current_price']) * fee_percentage / 100)
+                        for bet in alive_bets)
+        total_pnl_after_fees = total_unrealized_pnl - total_fees
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Unrealized P&L", f"${total_unrealized_pnl:+,.2f}")
+        with col2:
+            st.metric("Total Fees (Est.)", f"${total_fees:.2f}")
+        with col3:
+            st.metric("P&L After Fees", f"${total_pnl_after_fees:+,.2f}")
 
         # Create dataframe for alive bets
         df = pd.DataFrame(alive_bets)
@@ -1259,16 +1442,30 @@ class TradingDashboard:
         display_df['Entry Price'] = display_df['entry_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Current Price'] = display_df['current_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Amount'] = display_df['amount'].apply(lambda x: f"${x:,.0f}")
+
+        # Calculate fees for each bet (entry + estimated exit)
+        display_df['Fees (Est.)'] = display_df.apply(
+            lambda row: f"${(row['amount'] * fee_percentage / 100) + (row.get('current_value', row['amount']) * fee_percentage / 100):.2f}",
+            axis=1
+        )
+
         display_df['P&L'] = display_df.apply(lambda x: f"${x['pnl']:+.2f} ({x['pnl_pct']:+.1f}%)", axis=1)
+
+        # Calculate P&L minus fees
+        display_df['P&L - Fees'] = display_df.apply(
+            lambda row: f"${(row['pnl'] - (row['amount'] * fee_percentage / 100) - (row.get('current_value', row['amount']) * fee_percentage / 100)):+.2f}",
+            axis=1
+        )
+
         display_df['Entry Date'] = display_df['entry_time'].apply(lambda x: x.strftime('%m/%d %H:%M'))
         display_df['Algorithm'] = display_df['algorithm_used']
         display_df['Entry Prob'] = display_df['probability_when_placed'].apply(lambda x: f"{x:.1f}%")
 
-        # Show compact table
-        columns_to_show = ['Asset', 'Entry Price', 'Current Price', 'Amount', 'P&L', 'Entry Date', 'Algorithm', 'Entry Prob']
+        # Show table with fees columns
+        columns_to_show = ['Asset', 'Entry Price', 'Current Price', 'Amount', 'Fees (Est.)', 'P&L', 'P&L - Fees', 'Entry Date', 'Algorithm', 'Entry Prob']
         st.dataframe(
             display_df[columns_to_show],
-            use_container_width=True,
+            width='stretch',
             height=400
         )
 
@@ -1297,22 +1494,29 @@ class TradingDashboard:
             st.info(f"No {status_filter} bets found")
             return
 
-        # Calculate and display P&L summary for filtered bets
+        # Calculate fees and P&L summary for filtered bets
+        fee_percentage = self.config.get('trading', {}).get('trading_fee_percentage', 0.25)  # Default 0.25% if not in config
         total_realized_pnl = sum(bet['pnl'] for bet in filtered_bets)
+
+        # Calculate total fees for closed bets (entry + exit fees)
+        total_fees = sum((bet['amount'] * fee_percentage / 100) + ((bet['shares'] * bet.get('exit_price', bet['current_price'])) * fee_percentage / 100)
+                        for bet in filtered_bets)
+        total_pnl_after_fees = total_realized_pnl - total_fees
+
         won_bets = [bet for bet in filtered_bets if bet['status'] == 'won']
         lost_bets = [bet for bet in filtered_bets if bet['status'] == 'lost']
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Realized P&L", f"${total_realized_pnl:+,.2f}")
         with col2:
-            if won_bets:
-                total_won_pnl = sum(bet['pnl'] for bet in won_bets)
-                st.metric("Won Bets P&L", f"${total_won_pnl:+,.2f}", delta=f"{len(won_bets)} bets")
+            st.metric("Total Fees Paid", f"${total_fees:.2f}")
         with col3:
-            if lost_bets:
-                total_lost_pnl = sum(bet['pnl'] for bet in lost_bets)
-                st.metric("Lost Bets P&L", f"${total_lost_pnl:+,.2f}", delta=f"{len(lost_bets)} bets")
+            st.metric("P&L After Fees", f"${total_pnl_after_fees:+,.2f}")
+        with col4:
+            if won_bets and lost_bets:
+                win_rate = len(won_bets) / len(filtered_bets) * 100
+                st.metric("Win Rate", f"{win_rate:.1f}%", delta=f"{len(won_bets)}W/{len(lost_bets)}L")
 
         # Create dataframe for closed bets
         df = pd.DataFrame(filtered_bets)
@@ -1326,18 +1530,32 @@ class TradingDashboard:
         display_df['Entry Price'] = display_df['entry_price'].apply(lambda x: f"${x:,.2f}")
         display_df['Exit Price'] = display_df['exit_price'].apply(lambda x: f"${x:,.2f}" if x else "N/A")
         display_df['Amount'] = display_df['amount'].apply(lambda x: f"${x:,.0f}")
+
+        # Calculate fees for each bet (entry + exit)
+        display_df['Fees Paid'] = display_df.apply(
+            lambda row: f"${(row['amount'] * fee_percentage / 100) + (row.get('exit_value', row['amount']) * fee_percentage / 100):.2f}",
+            axis=1
+        )
+
         display_df['P&L'] = display_df.apply(lambda x: f"${x['pnl']:+.2f} ({x['pnl_pct']:+.1f}%)", axis=1)
+
+        # Calculate P&L minus fees
+        display_df['P&L - Fees'] = display_df.apply(
+            lambda row: f"${(row['pnl'] - (row['amount'] * fee_percentage / 100) - (row.get('exit_value', row['amount']) * fee_percentage / 100)):+.2f}",
+            axis=1
+        )
+
         display_df['Entry Date'] = display_df['entry_time'].apply(lambda x: x.strftime('%m/%d %H:%M'))
         display_df['Exit Date'] = display_df['exit_time'].apply(lambda x: x.strftime('%m/%d %H:%M') if x else "N/A")
         display_df['Status'] = display_df['status'].apply(lambda x: x.upper())
         display_df['Duration'] = display_df.apply(lambda x:
             str(x['exit_time'] - x['entry_time']).split('.')[0] if x['exit_time'] else "N/A", axis=1)
 
-        # Show compact table
-        columns_to_show = ['Asset', 'Entry Price', 'Exit Price', 'Amount', 'P&L', 'Entry Date', 'Exit Date', 'Status', 'Duration']
+        # Show table with fees columns
+        columns_to_show = ['Asset', 'Entry Price', 'Exit Price', 'Amount', 'Fees Paid', 'P&L', 'P&L - Fees', 'Entry Date', 'Exit Date', 'Status', 'Duration']
         st.dataframe(
             display_df[columns_to_show],
-            use_container_width=True,
+            width='stretch',
             height=400
         )
 
@@ -1610,7 +1828,7 @@ class TradingDashboard:
             fig.update_yaxes(title_text="Price ($)", row=1, col=1)
             fig.update_yaxes(title_text="Volume", row=2, col=1)
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
         except Exception as e:
             st.error(f"Error creating price chart: {e}")
@@ -1683,11 +1901,18 @@ class TradingDashboard:
             initial_sidebar_state="collapsed"
         )
         
+        # Auto-refresh when not in automated mode
+        if not st.session_state.auto_mode:
+            refresh_count = st_autorefresh(interval=15*60*1000, key="dashboard_refresh")  # 15 minutes
+            # When auto-refresh triggers, force data refresh
+            if refresh_count > 0:
+                st.session_state.needs_refresh = True
+
         # Handle refresh requests
         if st.session_state.needs_refresh:
             asyncio.run(self.refresh_data())
             st.session_state.needs_refresh = False
-        
+
         # Initialize data on first load
         if st.session_state.last_update is None:
             asyncio.run(self.refresh_data())
@@ -1722,13 +1947,13 @@ class TradingDashboard:
             self.render_trading_controls()
             st.divider()
 
-            col1, col2 = st.columns(2)
+            # Market Opportunities section
+            self.render_opportunities()
 
-            with col1:
-                self.render_opportunities()
+            st.divider()
 
-            with col2:
-                self.render_active_bets()
+            # Active Bets section (underneath Market Opportunities)
+            self.render_active_bets()
 
             st.divider()
             self.render_performance_charts()
