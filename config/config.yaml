@@ -13,7 +13,7 @@ trading:
   min_probability: 55.0     # Minimum 55% probability to bet
   max_loss_percentage: 5.0  # Maximum 5% loss threshold
   top_n_display: 10  # Number of top assets to show in manual mode
-  trading_fee_percentage: 0.5  # Trading fees (0.5% per transaction)
+  trading_fee_percentage: 0.25  # Trading fees (0.25% per transaction)
   
 # Risk Management
 risk:
