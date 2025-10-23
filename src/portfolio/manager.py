@@ -154,11 +154,24 @@ class PortfolioManager:
             transaction_type TEXT NOT NULL  -- 'deposit', 'withdrawal', 'bet_entry', 'bet_exit'
         )
         ''')
+
+        # Bet predictions table - stores individual algorithm predictions for each bet
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bet_predictions (
+            prediction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bet_id TEXT NOT NULL,
+            algorithm TEXT NOT NULL,
+            probability REAL NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (bet_id) REFERENCES bets(bet_id)
+        )
+        ''')
         
         # Create indexes
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_bets_status ON bets(status)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_bets_symbol ON bets(symbol)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_portfolio_history_time ON portfolio_history(timestamp)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_bet_predictions_bet_id ON bet_predictions(bet_id)')
         
         conn.commit()
         conn.close()
@@ -310,7 +323,10 @@ class PortfolioManager:
         
         # Store bet
         await self._store_bet(bet)
-        
+
+        # Store individual algorithm predictions for this bet
+        await self._store_bet_predictions(bet_id, algorithms)
+
         # Update cash balance
         new_balance = self.cash_balance - bet_amount
         await self._update_cash_balance(new_balance, f"Bet entry: {symbol}", bet_id, 'bet_entry')
@@ -453,7 +469,32 @@ class PortfolioManager:
             conn.rollback()
         finally:
             conn.close()
-    
+
+    async def _store_bet_predictions(self, bet_id: str, algorithms: list):
+        """Store individual algorithm predictions for a bet"""
+        if not algorithms:
+            return
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            timestamp = datetime.now().isoformat()
+            for algo_pred in algorithms:
+                cursor.execute('''
+                INSERT INTO bet_predictions (bet_id, algorithm, probability, timestamp)
+                VALUES (?, ?, ?, ?)
+                ''', (bet_id, algo_pred['algorithm'], algo_pred['probability'], timestamp))
+
+            conn.commit()
+            self.logger.debug(f"Stored {len(algorithms)} algorithm predictions for bet {bet_id}")
+
+        except Exception as e:
+            self.logger.error(f"Error storing bet predictions: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
     async def _update_bet(self, bet: Bet):
         """Update existing bet in database"""
         conn = sqlite3.connect(self.db_path)
@@ -681,8 +722,9 @@ class PortfolioManager:
             
             # Calculate current value and P&L
             current_value = shares * current_price
-            exit_fee = amount * (self.trading_fee_percentage / 100)
-            realized_pnl = current_value - amount - exit_fee  # P&L after fees
+            exit_fee = current_value * (self.trading_fee_percentage / 100)  # Fee on exit value, not original amount
+            net_exit_value = current_value - exit_fee
+            realized_pnl = net_exit_value - amount  # P&L after fees
             
             # Determine new status based on thresholds first, then P&L
             if current_price >= win_price:
@@ -712,16 +754,15 @@ class PortfolioManager:
                 bet_id
             ))
             
-            # Update cash balance - add back the current value minus fees
-            net_return = current_value - exit_fee
-            new_cash_balance = self.cash_balance + net_return
+            # Update cash balance - add back the net exit value (already has fees deducted)
+            new_cash_balance = self.cash_balance + net_exit_value
             
             # Record cash transaction
             cursor.execute('''
             INSERT INTO cash_transactions (amount, balance_after, description, bet_id, transaction_type)
             VALUES (?, ?, ?, ?, ?)
             ''', (
-                net_return,
+                net_exit_value,
                 new_cash_balance,
                 f"Bet closed: {symbol} - {close_reason}",
                 bet_id,

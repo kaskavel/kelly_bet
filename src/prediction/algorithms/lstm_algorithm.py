@@ -74,10 +74,11 @@ class LSTMAlgorithm(BasePredictionAlgorithm):
             sequence_data = self._prepare_sequence_data(data)
             if sequence_data is None or len(sequence_data) == 0:
                 return None
-            
-            # Get the most recent sequence
-            latest_sequence = sequence_data[-1:].reshape(1, self.sequence_length, sequence_data.shape[1])
-            
+
+            # Get the most recent sequence (already shaped as [num_sequences, sequence_length, num_features])
+            # We just need the last sequence: [1, sequence_length, num_features]
+            latest_sequence = sequence_data[-1:]
+
             # Make prediction
             prediction = self.model.predict(latest_sequence, verbose=0)[0][0]
             
@@ -195,9 +196,10 @@ class LSTMAlgorithm(BasePredictionAlgorithm):
             if len(features) < self.sequence_length + 10:
                 self.logger.warning("Not enough clean data for LSTM training")
                 return None, None
-            
-            # Scale features
-            features_scaled = self.scaler.fit_transform(features)
+
+            # Scale features - use .values to convert DataFrame to numpy array
+            # This ensures consistent behavior during training and prediction
+            features_scaled = self.scaler.fit_transform(features.values)
             
             # Create sequences and targets
             X, y = [], []
@@ -241,12 +243,13 @@ class LSTMAlgorithm(BasePredictionAlgorithm):
             
             # Prepare feature matrix
             features = df[feature_columns].dropna()
-            
+
             if len(features) < self.sequence_length:
                 return None
-            
+
             # Scale features using fitted scaler
-            features_scaled = self.scaler.transform(features)
+            # Use .values to convert DataFrame to numpy array (consistent with training)
+            features_scaled = self.scaler.transform(features.values)
             
             # Create sequences
             sequences = []

@@ -485,9 +485,10 @@ class TradingDashboard:
                 bet_rows = []
 
                 for row in rows:
+                    bet_id_full = row[0]
                     bet_data = {
-                        "bet_id": row[0][:8],  # Short ID for display
-                        "full_bet_id": row[0],  # Keep full ID for operations
+                        "bet_id": bet_id_full[:8],  # Short ID for display
+                        "full_bet_id": bet_id_full,  # Keep full ID for operations
                         "symbol": row[1],
                         "asset_type": row[2],
                         "entry_price": float(row[3]),
@@ -506,6 +507,17 @@ class TradingDashboard:
                         "exit_price": float(row[16]) if row[16] else None,
                         "realized_pnl": float(row[17]) if row[17] else None
                     }
+
+                    # Fetch individual algorithm predictions for this bet
+                    cursor.execute('''
+                    SELECT algorithm, probability
+                    FROM bet_predictions
+                    WHERE bet_id = ?
+                    ORDER BY algorithm
+                    ''', (bet_id_full,))
+
+                    predictions = cursor.fetchall()
+                    bet_data["algorithm_predictions"] = {algo: prob for algo, prob in predictions}
 
                     bet_rows.append(bet_data)
                     if bet_data["status"] == "alive":
@@ -948,67 +960,81 @@ class TradingDashboard:
             st.info("No opportunities match the current filters.")
             return
 
-        # Create DataFrame
+        # Get list of symbols with active bets for highlighting
+        active_bet_symbols = set()
+        if hasattr(st.session_state, 'active_bets_data') and st.session_state.active_bets_data:
+            active_bet_symbols = {bet['symbol'] for bet in st.session_state.active_bets_data}
+
+        # Create DataFrame with sortable columns
         df_data = []
         for opp in opportunities:
+            # Add red color indicator for assets with active bets
+            symbol_display = opp['symbol']
+            if opp['symbol'] in active_bet_symbols:
+                symbol_display = f"🔴 {opp['symbol']}"
+
             df_data.append({
-                'Symbol': opp['symbol'],
+                'Symbol': symbol_display,
                 'Type': opp.get('asset_type', 'stock').upper(),
-                'Price': f"${opp['current_price']:,.2f}",
-                'Final Prob': f"{opp['final_probability']:.1f}%",
-                'Kelly %': f"{opp['kelly_fraction']*100:.1f}%",
-                'Recommended': f"${opp['recommended_amount']:,.0f}" if opp['is_favorable'] else "Not Favorable",
-                'LSTM': f"{opp['algorithms']['lstm']:.1f}%",
-                'RF': f"{opp['algorithms']['random_forest']:.1f}%",
-                'SMA': f"{opp['algorithms']['sma']:.1f}%",
-                'RSI': f"{opp['algorithms']['rsi']:.1f}%",
-                'Regression': f"{opp['algorithms']['regression']:.1f}%",
-                'SVM': f"{opp['algorithms']['svm']:.1f}%"
+                'Price': opp['current_price'],  # Keep numeric for sorting
+                'Final Prob': opp['final_probability'],  # Keep numeric for sorting
+                'Kelly %': opp['kelly_fraction']*100,  # Keep numeric for sorting
+                'Recommended': opp['recommended_amount'] if opp['is_favorable'] else 0,  # Keep numeric for sorting
+                'LSTM': opp['algorithms']['lstm'],
+                'RF': opp['algorithms']['random_forest'],
+                'SMA': opp['algorithms']['sma'],
+                'RSI': opp['algorithms']['rsi'],
+                'Regression': opp['algorithms']['regression'],
+                'SVM': opp['algorithms']['svm'],
+                '_index': opportunities.index(opp)  # Keep original index for button keys
             })
 
-        # Display table with Place Bet buttons
         if df_data:
-            # Show header
-            col_headers = ['Symbol', 'Type', 'Price', 'Final Prob', 'Kelly %', 'Recommended', 'LSTM', 'RF', 'SMA', 'RSI', 'Regression', 'SVM', 'Action']
-            header_cols = st.columns([1, 0.7, 1, 1, 1, 1.2, 0.8, 0.8, 0.8, 0.8, 1, 0.8, 1])
-            for i, header in enumerate(col_headers):
-                with header_cols[i]:
-                    st.write(f"**{header}**")
+            df = pd.DataFrame(df_data)
+
+            # Display sortable dataframe
+            st.write("**Market Opportunities Table** (Click column headers to sort)")
+            st.caption("🔴 Red indicator = Active bet already placed for this asset")
+
+            # Use st.dataframe with column configuration for better formatting
+            st.dataframe(
+                df.drop(columns=['_index']),  # Don't show the index column
+                use_container_width=True,
+                column_config={
+                    "Symbol": st.column_config.TextColumn("Symbol", width="medium"),
+                    "Type": st.column_config.TextColumn("Type", width="small"),
+                    "Price": st.column_config.NumberColumn("Price", format="$%.2f"),
+                    "Final Prob": st.column_config.NumberColumn("Final Prob", format="%.1f%%"),
+                    "Kelly %": st.column_config.NumberColumn("Kelly %", format="%.1f%%"),
+                    "Recommended": st.column_config.NumberColumn("Recommended", format="$%.0f"),
+                    "LSTM": st.column_config.NumberColumn("LSTM", format="%.1f%%"),
+                    "RF": st.column_config.NumberColumn("RF", format="%.1f%%"),
+                    "SMA": st.column_config.NumberColumn("SMA", format="%.1f%%"),
+                    "RSI": st.column_config.NumberColumn("RSI", format="%.1f%%"),
+                    "Regression": st.column_config.NumberColumn("Regression", format="%.1f%%"),
+                    "SVM": st.column_config.NumberColumn("SVM", format="%.1f%%"),
+                },
+                hide_index=True
+            )
 
             st.divider()
+            st.write("**Place Bets**")
+            st.caption("Select assets below to place bets")
 
-            # Show data rows with buttons
-            for idx, (opp, row_data) in enumerate(zip(opportunities, df_data)):
-                cols = st.columns([1, 0.7, 1, 1, 1, 1.2, 0.8, 0.8, 0.8, 0.8, 1, 0.8, 1])
-
-                with cols[0]:
-                    asset_badge = "🪙" if opp.get('asset_type') == 'crypto' else "📈"
-                    st.write(f"{asset_badge} {row_data['Symbol']}")
-                with cols[1]:
-                    st.write(row_data['Type'])
-                with cols[2]:
-                    st.write(row_data['Price'])
-                with cols[3]:
-                    prob_color = "🟢" if opp['final_probability'] > 70 else "🟡" if opp['final_probability'] > 60 else "🔴"
-                    st.write(f"{prob_color} {row_data['Final Prob']}")
-                with cols[4]:
-                    st.write(row_data['Kelly %'])
-                with cols[5]:
-                    st.write(row_data['Recommended'])
-                with cols[6]:
-                    st.write(row_data['LSTM'])
-                with cols[7]:
-                    st.write(row_data['RF'])
-                with cols[8]:
-                    st.write(row_data['SMA'])
-                with cols[9]:
-                    st.write(row_data['RSI'])
-                with cols[10]:
-                    st.write(row_data['Regression'])
-                with cols[11]:
-                    st.write(row_data['SVM'])
-                with cols[12]:
-                    if opp['is_favorable']:
+            # Show action buttons separately below the table
+            for idx, opp in enumerate(opportunities):
+                if opp['is_favorable']:
+                    cols = st.columns([2, 2, 2, 2, 1])
+                    with cols[0]:
+                        symbol_color = "🔴" if opp['symbol'] in active_bet_symbols else "📈" if opp.get('asset_type') != 'crypto' else "🪙"
+                        st.write(f"{symbol_color} **{opp['symbol']}**")
+                    with cols[1]:
+                        st.write(f"Prob: {opp['final_probability']:.1f}%")
+                    with cols[2]:
+                        st.write(f"Recommended: ${opp['recommended_amount']:,.0f}")
+                    with cols[3]:
+                        st.write(f"Price: ${opp['current_price']:,.2f}")
+                    with cols[4]:
                         if st.button(f"Place Bet", key=f"place_bet_{idx}_{opp['symbol']}"):
                             success = asyncio.run(self.place_bet(
                                 symbol=opp['symbol'],
@@ -1017,13 +1043,6 @@ class TradingDashboard:
                             ))
                             if success:
                                 st.rerun()
-                    else:
-                        st.write("—")
-
-                if idx < len(df_data) - 1:  # Don't add divider after last row
-                    st.divider()
-        else:
-            st.info("No opportunities available.")
 
 
     def render_detailed_opportunities(self, opportunities: List[Dict]):
@@ -1461,8 +1480,13 @@ class TradingDashboard:
         display_df['Algorithm'] = display_df['algorithm_used']
         display_df['Entry Prob'] = display_df['probability_when_placed'].apply(lambda x: f"{x:.1f}%")
 
-        # Show table with fees columns
-        columns_to_show = ['Asset', 'Entry Price', 'Current Price', 'Amount', 'Fees (Est.)', 'P&L', 'P&L - Fees', 'Entry Date', 'Algorithm', 'Entry Prob']
+        # Add individual algorithm prediction columns
+        display_df['Algo Predictions'] = display_df['algorithm_predictions'].apply(
+            lambda preds: ', '.join([f"{algo.split()[0]}: {prob:.1f}%" for algo, prob in preds.items()]) if preds else "N/A"
+        )
+
+        # Show table with fees columns and algorithm predictions
+        columns_to_show = ['Asset', 'Entry Price', 'Current Price', 'Amount', 'Fees (Est.)', 'P&L', 'P&L - Fees', 'Entry Date', 'Algorithm', 'Entry Prob', 'Algo Predictions']
         st.dataframe(
             display_df[columns_to_show],
             width='stretch',
@@ -1551,8 +1575,13 @@ class TradingDashboard:
         display_df['Duration'] = display_df.apply(lambda x:
             str(x['exit_time'] - x['entry_time']).split('.')[0] if x['exit_time'] else "N/A", axis=1)
 
-        # Show table with fees columns
-        columns_to_show = ['Asset', 'Entry Price', 'Exit Price', 'Amount', 'Fees Paid', 'P&L', 'P&L - Fees', 'Entry Date', 'Exit Date', 'Status', 'Duration']
+        # Add individual algorithm prediction columns
+        display_df['Algo Predictions'] = display_df['algorithm_predictions'].apply(
+            lambda preds: ', '.join([f"{algo.split()[0]}: {prob:.1f}%" for algo, prob in preds.items()]) if preds else "N/A"
+        )
+
+        # Show table with fees columns and algorithm predictions
+        columns_to_show = ['Asset', 'Entry Price', 'Exit Price', 'Amount', 'Fees Paid', 'P&L', 'P&L - Fees', 'Entry Date', 'Exit Date', 'Status', 'Duration', 'Algo Predictions']
         st.dataframe(
             display_df[columns_to_show],
             width='stretch',

@@ -50,9 +50,9 @@ class RandomForestAlgorithm(BasePredictionAlgorithm):
             if features is None:
                 return None
             
-            # Get latest feature vector
+            # Get latest feature vector (already as numpy array)
             latest_features = features.iloc[-1:].values
-            
+
             # Scale features
             latest_features_scaled = self.scaler.transform(latest_features)
             
@@ -105,10 +105,10 @@ class RandomForestAlgorithm(BasePredictionAlgorithm):
             X_train, X_test, y_train, y_test = train_test_split(
                 features_clean, targets_clean, test_size=0.2, random_state=42
             )
-            
-            # Scale features
-            X_train_scaled = self.scaler.fit_transform(X_train)
-            X_test_scaled = self.scaler.transform(X_test)
+
+            # Scale features - convert DataFrames to numpy arrays to avoid feature name warnings
+            X_train_scaled = self.scaler.fit_transform(X_train.values)
+            X_test_scaled = self.scaler.transform(X_test.values)
             
             # Train model
             self.model = RandomForestClassifier(
