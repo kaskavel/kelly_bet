@@ -233,58 +233,58 @@ class TradingDashboard:
                                     if algo_name == 'lstm':
                                         if algo_error:
                                             failed_algorithms.append(f"LSTM: {algo_error}")
-                                            algorithms_dict['lstm'] = final_probability * 1.05  # Fallback estimate
+                                            algorithms_dict['lstm'] = None  # No hallucination
                                         else:
                                             algorithms_dict['lstm'] = algo_prob
                                     elif algo_name == 'rf':
                                         if algo_error:
                                             failed_algorithms.append(f"Random Forest: {algo_error}")
-                                            algorithms_dict['random_forest'] = final_probability * 0.98  # Fallback
+                                            algorithms_dict['random_forest'] = None  # No hallucination
                                         else:
                                             algorithms_dict['random_forest'] = algo_prob
                                     elif algo_name == 'sma':
                                         if algo_error:
                                             failed_algorithms.append(f"SMA: {algo_error}")
-                                            algorithms_dict['sma'] = final_probability * 1.01  # Fallback
+                                            algorithms_dict['sma'] = None  # No hallucination
                                         else:
                                             algorithms_dict['sma'] = algo_prob
                                     elif algo_name == 'rsi':
                                         if algo_error:
                                             failed_algorithms.append(f"RSI: {algo_error}")
-                                            algorithms_dict['rsi'] = final_probability * 0.99  # Fallback
+                                            algorithms_dict['rsi'] = None  # No hallucination
                                         else:
                                             algorithms_dict['rsi'] = algo_prob
                                     elif algo_name == 'regression':
                                         if algo_error:
                                             failed_algorithms.append(f"Regression: {algo_error}")
-                                            algorithms_dict['regression'] = final_probability * 0.97  # Fallback
+                                            algorithms_dict['regression'] = None  # No hallucination
                                         else:
                                             algorithms_dict['regression'] = algo_prob
                                     elif algo_name == 'svm':
                                         if algo_error:
                                             failed_algorithms.append(f"SVM: {algo_error}")
-                                            algorithms_dict['svm'] = final_probability * 1.02  # Fallback
+                                            algorithms_dict['svm'] = None  # No hallucination
                                         else:
                                             algorithms_dict['svm'] = algo_prob
 
-                            # Ensure we have all six algorithms (fill missing with ensemble estimate)
+                            # Ensure we have all six algorithms (mark missing as None)
                             if 'lstm' not in algorithms_dict:
-                                algorithms_dict['lstm'] = final_probability * 1.05  # Slightly higher estimate
+                                algorithms_dict['lstm'] = None
                                 failed_algorithms.append("LSTM: Model not available")
                             if 'random_forest' not in algorithms_dict:
-                                algorithms_dict['random_forest'] = final_probability * 0.98  # Slightly lower
+                                algorithms_dict['random_forest'] = None
                                 failed_algorithms.append("Random Forest: Model not available")
                             if 'sma' not in algorithms_dict:
-                                algorithms_dict['sma'] = final_probability * 1.01  # Technical estimate
+                                algorithms_dict['sma'] = None
                                 failed_algorithms.append("SMA: Model not available")
                             if 'rsi' not in algorithms_dict:
-                                algorithms_dict['rsi'] = final_probability * 0.99  # Technical estimate
+                                algorithms_dict['rsi'] = None
                                 failed_algorithms.append("RSI: Model not available")
                             if 'regression' not in algorithms_dict:
-                                algorithms_dict['regression'] = final_probability * 0.97  # Conservative estimate
+                                algorithms_dict['regression'] = None
                                 failed_algorithms.append("Regression: Model not available")
                             if 'svm' not in algorithms_dict:
-                                algorithms_dict['svm'] = final_probability * 1.02  # Slightly higher
+                                algorithms_dict['svm'] = None
                                 failed_algorithms.append("SVM: Model not available")
 
                             # Calculate Kelly recommendation using REAL probability
@@ -954,8 +954,85 @@ class TradingDashboard:
         else:
             self.render_compact_opportunities(filtered_opps)
 
+    @st.dialog("Place Bet Confirmation")
+    def show_bet_placement_dialog(self, opp: Dict, active_bet_symbols: set):
+        """Show bet placement confirmation dialog"""
+        symbol = opp['symbol']
+
+        # Check if there's already an active bet
+        if symbol in active_bet_symbols:
+            st.warning(f"⚠️ You already have an active bet for {symbol}")
+            st.write("Are you sure you want to place another bet on this asset?")
+
+        # Display asset information
+        st.subheader(f"{symbol} - {opp.get('asset_type', 'stock').upper()}")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Current Price", f"${opp['current_price']:,.2f}")
+            st.metric("Final Probability", f"{opp['final_probability']:.1f}%")
+        with col2:
+            st.metric("Kelly Fraction", f"{opp['kelly_fraction']*100:.1f}%")
+            st.metric("Recommended Amount", f"${opp['recommended_amount']:,.0f}")
+
+        # Show algorithm predictions
+        st.write("**Individual Algorithm Predictions:**")
+
+        algo_cols = st.columns(3)
+        algorithms = [
+            ('LSTM', opp['algorithms']['lstm']),
+            ('Random Forest', opp['algorithms']['random_forest']),
+            ('SMA', opp['algorithms']['sma']),
+            ('RSI', opp['algorithms']['rsi']),
+            ('Regression', opp['algorithms']['regression']),
+            ('SVM', opp['algorithms']['svm'])
+        ]
+
+        for idx, (algo_name, algo_prob) in enumerate(algorithms):
+            with algo_cols[idx % 3]:
+                if algo_prob is not None:
+                    st.write(f"**{algo_name}:** {algo_prob:.1f}%")
+                else:
+                    st.write(f"**{algo_name}:** N/A")
+
+        # Show failed algorithms if any
+        if opp.get('failed_algorithms'):
+            with st.expander("⚠️ Algorithm Warnings", expanded=False):
+                for failure in opp['failed_algorithms']:
+                    st.caption(failure)
+
+        # Show risk warning if present
+        if opp.get('risk_warning'):
+            st.warning(f"⚠️ {opp['risk_warning']}")
+
+        st.divider()
+
+        # Action buttons
+        if not opp['is_favorable']:
+            st.error("This bet is not favorable according to Kelly Criterion (probability too low or odds unfavorable)")
+            if st.button("Close", type="secondary", use_container_width=True):
+                st.rerun()
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Cancel", type="secondary", use_container_width=True):
+                    st.rerun()
+            with col2:
+                if st.button("Confirm & Place Bet", type="primary", use_container_width=True):
+                    success = asyncio.run(self.place_bet(
+                        symbol=symbol,
+                        probability=opp['final_probability'],
+                        current_price=opp['current_price']
+                    ))
+                    if success:
+                        st.success(f"✓ Bet placed successfully for {symbol}!")
+                        time.sleep(1)  # Brief pause to show success message
+                        st.rerun()
+                    else:
+                        st.error("Failed to place bet. Please check logs.")
+
     def render_compact_opportunities(self, opportunities: List[Dict]):
-        """Render opportunities in compact table format"""
+        """Render opportunities in compact table format with clickable rows"""
         if not opportunities:
             st.info("No opportunities match the current filters.")
             return
@@ -967,38 +1044,41 @@ class TradingDashboard:
 
         # Create DataFrame with sortable columns
         df_data = []
-        for opp in opportunities:
+        for idx, opp in enumerate(opportunities):
             # Add red color indicator for assets with active bets
             symbol_display = opp['symbol']
             if opp['symbol'] in active_bet_symbols:
                 symbol_display = f"🔴 {opp['symbol']}"
 
+            # Handle None values for display - show as "N/A"
+            def format_algo_value(val):
+                return val if val is not None else None  # Keep None for proper sorting
+
             df_data.append({
                 'Symbol': symbol_display,
                 'Type': opp.get('asset_type', 'stock').upper(),
-                'Price': opp['current_price'],  # Keep numeric for sorting
-                'Final Prob': opp['final_probability'],  # Keep numeric for sorting
-                'Kelly %': opp['kelly_fraction']*100,  # Keep numeric for sorting
-                'Recommended': opp['recommended_amount'] if opp['is_favorable'] else 0,  # Keep numeric for sorting
-                'LSTM': opp['algorithms']['lstm'],
-                'RF': opp['algorithms']['random_forest'],
-                'SMA': opp['algorithms']['sma'],
-                'RSI': opp['algorithms']['rsi'],
-                'Regression': opp['algorithms']['regression'],
-                'SVM': opp['algorithms']['svm'],
-                '_index': opportunities.index(opp)  # Keep original index for button keys
+                'Price': opp['current_price'],
+                'Final Prob': opp['final_probability'],
+                'Kelly %': opp['kelly_fraction']*100,
+                'Recommended': opp['recommended_amount'] if opp['is_favorable'] else 0,
+                'LSTM': format_algo_value(opp['algorithms']['lstm']),
+                'RF': format_algo_value(opp['algorithms']['random_forest']),
+                'SMA': format_algo_value(opp['algorithms']['sma']),
+                'RSI': format_algo_value(opp['algorithms']['rsi']),
+                'Regression': format_algo_value(opp['algorithms']['regression']),
+                'SVM': format_algo_value(opp['algorithms']['svm']),
             })
 
         if df_data:
             df = pd.DataFrame(df_data)
 
-            # Display sortable dataframe
-            st.write("**Market Opportunities Table** (Click column headers to sort)")
-            st.caption("🔴 Red indicator = Active bet already placed for this asset")
+            # Display instructions
+            st.write("**Market Opportunities Table**")
+            st.caption("🔴 Red indicator = Active bet already placed | Click column headers to sort | Select row below to place bet")
 
-            # Use st.dataframe with column configuration for better formatting
-            st.dataframe(
-                df.drop(columns=['_index']),  # Don't show the index column
+            # Use st.dataframe with column configuration and selection enabled
+            event = st.dataframe(
+                df,
                 use_container_width=True,
                 column_config={
                     "Symbol": st.column_config.TextColumn("Symbol", width="medium"),
@@ -1014,35 +1094,18 @@ class TradingDashboard:
                     "Regression": st.column_config.NumberColumn("Regression", format="%.1f%%"),
                     "SVM": st.column_config.NumberColumn("SVM", format="%.1f%%"),
                 },
-                hide_index=True
+                hide_index=True,
+                on_select="rerun",
+                selection_mode="single-row"
             )
 
-            st.divider()
-            st.write("**Place Bets**")
-            st.caption("Select assets below to place bets")
+            # Handle row selection
+            if event.selection and event.selection.rows:
+                selected_idx = event.selection.rows[0]
+                selected_opp = opportunities[selected_idx]
 
-            # Show action buttons separately below the table
-            for idx, opp in enumerate(opportunities):
-                if opp['is_favorable']:
-                    cols = st.columns([2, 2, 2, 2, 1])
-                    with cols[0]:
-                        symbol_color = "🔴" if opp['symbol'] in active_bet_symbols else "📈" if opp.get('asset_type') != 'crypto' else "🪙"
-                        st.write(f"{symbol_color} **{opp['symbol']}**")
-                    with cols[1]:
-                        st.write(f"Prob: {opp['final_probability']:.1f}%")
-                    with cols[2]:
-                        st.write(f"Recommended: ${opp['recommended_amount']:,.0f}")
-                    with cols[3]:
-                        st.write(f"Price: ${opp['current_price']:,.2f}")
-                    with cols[4]:
-                        if st.button(f"Place Bet", key=f"place_bet_{idx}_{opp['symbol']}"):
-                            success = asyncio.run(self.place_bet(
-                                symbol=opp['symbol'],
-                                probability=opp['final_probability'],
-                                current_price=opp['current_price']
-                            ))
-                            if success:
-                                st.rerun()
+                # Show bet placement dialog
+                self.show_bet_placement_dialog(selected_opp, active_bet_symbols)
 
 
     def render_detailed_opportunities(self, opportunities: List[Dict]):
