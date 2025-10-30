@@ -54,13 +54,23 @@ class RegressionAlgorithm(BasePredictionAlgorithm):
             features = self._prepare_features(data)
             if features is None:
                 return None
-            
+
             # Get latest feature vector
             latest_features = features.iloc[-1:].values
-            
+
+            # Check for NaN values before scaling
+            if np.isnan(latest_features).any():
+                self.logger.warning("Features contain NaN values, skipping prediction")
+                return None
+
             # Scale features
             latest_features_scaled = self.scaler.transform(latest_features)
-            
+
+            # Double-check after scaling (scaler can sometimes introduce NaN)
+            if np.isnan(latest_features_scaled).any():
+                self.logger.warning("Scaled features contain NaN values, skipping prediction")
+                return None
+
             # Get predictions from all models
             predictions = {}
             for model_name, model in self.models.items():
@@ -114,10 +124,10 @@ class RegressionAlgorithm(BasePredictionAlgorithm):
             X_train, X_test, y_train, y_test = train_test_split(
                 features_clean, targets_clean, test_size=0.2, random_state=42
             )
-            
-            # Scale features
-            X_train_scaled = self.scaler.fit_transform(X_train)
-            X_test_scaled = self.scaler.transform(X_test)
+
+            # Scale features - convert DataFrames to numpy arrays to avoid feature name warnings
+            X_train_scaled = self.scaler.fit_transform(X_train.values)
+            X_test_scaled = self.scaler.transform(X_test.values)
             
             # Train multiple models
             models_to_train = {

@@ -17,6 +17,7 @@ from .algorithms.rsi_algorithm import RSIAlgorithm
 from .algorithms.random_forest_algorithm import RandomForestAlgorithm
 from .algorithms.lstm_algorithm import LSTMAlgorithm
 from .algorithms.regression_algorithm import RegressionAlgorithm
+from .algorithms.svm_algorithm import SVMAlgorithm
 
 
 class PredictionEngine:
@@ -53,7 +54,11 @@ class PredictionEngine:
         # Linear Regression
         regression_config = algo_configs.get('regression', {})
         self.algorithms['regression'] = RegressionAlgorithm(regression_config)
-        
+
+        # Support Vector Machine
+        svm_config = algo_configs.get('svm', {})
+        self.algorithms['svm'] = SVMAlgorithm(svm_config)
+
         # Initialize equal weights
         num_algorithms = len(self.algorithms)
         initial_weight = 1.0 / num_algorithms if num_algorithms > 0 else 0
@@ -319,7 +324,7 @@ class PredictionEngine:
         untrained_models = []
         
         for algo_name, algorithm in self.algorithms.items():
-            if not algorithm.is_trained and algo_name in ['rf', 'lstm', 'regression']:
+            if not algorithm.is_trained and algo_name in ['rf', 'lstm', 'regression', 'svm']:
                 untrained_models.append((algo_name, algorithm))
         
         if not untrained_models:
