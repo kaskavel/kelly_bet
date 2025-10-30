@@ -117,14 +117,23 @@ class MarketDataManager:
                     latest_dt = latest_dt.replace(tzinfo=None)
                 
                 hours_since_update = (current_time - latest_dt).total_seconds() / 3600
-                
+
                 if hours_since_update < (self.cache_duration / 3600):
                     self.logger.debug(f"Using cached data for {symbol} (last update: {hours_since_update:.1f}h ago)")
                     return existing_data.tail(days) if len(existing_data) > days else existing_data
-                
-                # Fetch only new data since last update
-                days_to_fetch = max(7, int(hours_since_update / 24) + 1)  # At least 1 week
-                self.logger.info(f"Extending history for {symbol} - fetching {days_to_fetch} days")
+
+                # Fetch only new data since last update - smart incremental
+                if hours_since_update < 24:
+                    # Less than 1 day old - fetch just 2 days to get latest
+                    days_to_fetch = 2
+                elif hours_since_update < 168:  # Less than 1 week
+                    # Fetch a few extra days to cover gaps
+                    days_to_fetch = min(7, int(hours_since_update / 24) + 2)
+                else:
+                    # Older than a week - fetch enough to backfill
+                    days_to_fetch = min(30, int(hours_since_update / 24) + 5)
+
+                self.logger.info(f"Extending history for {symbol} - fetching {days_to_fetch} days (last update: {hours_since_update:.1f}h ago)")
                 fresh_data = await self._fetch_from_api(symbol, days_to_fetch)
             else:
                 # First time - get full history
@@ -278,13 +287,10 @@ class MarketDataManager:
             
             # Fetch data in thread pool to avoid blocking
             ticker = yf.Ticker(symbol)
-            # Use daily data for longer periods, 30m for recent data
-            if days > 60:
-                interval = '1d'  # Daily intervals for longer periods
-                actual_days = min(days, 365)  # Limit to 1 year of daily data
-                start_date = end_date - timedelta(days=actual_days)
-            else:
-                interval = '1h'  # Hourly data for shorter periods (30m has 60-day limit)
+            # Always use daily data for consistency
+            interval = '1d'  # Daily intervals - consistent granularity
+            actual_days = min(days, 365)  # Limit to 1 year of daily data
+            start_date = end_date - timedelta(days=actual_days)
             
             data = await loop.run_in_executor(
                 None,
@@ -347,7 +353,7 @@ class MarketDataManager:
                     # Store price data
                     for timestamp, row in data.iterrows():
                         cursor.execute('''
-                        INSERT OR REPLACE INTO price_data 
+                        INSERT OR IGNORE INTO price_data
                         (asset_id, timestamp, open, high, low, close, volume)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                         ''', (

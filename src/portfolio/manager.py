@@ -66,7 +66,6 @@ class PortfolioManager:
         self.db_path = Path(config['database']['sqlite']['path'])
         
         # Portfolio state
-        self.cash_balance = 0.0
         self.active_bets: Dict[str, Bet] = {}
         self.initial_capital = config.get('trading', {}).get('initial_capital', 10000.0)
         
@@ -86,15 +85,37 @@ class PortfolioManager:
         
         # Load existing portfolio state
         await self._load_portfolio_state()
-        
+
         # If no cash balance exists, initialize with starting capital
-        if self.cash_balance == 0.0:
-            self.cash_balance = self.initial_capital
-            await self._update_cash_balance(self.initial_capital, "Initial capital")
+        cash_balance = await self.get_cash_balance()
+        if cash_balance == 0.0:
+            await self._record_cash_transaction(
+                amount=self.initial_capital,
+                description="Initial capital - Fresh start",
+                transaction_type='initial_capital'
+            )
         
-        self.logger.info(f"Portfolio initialized: ${self.cash_balance:.2f} cash, "
+        cash_balance = await self.get_cash_balance()
+        self.logger.info(f"Portfolio initialized: ${cash_balance:.2f} cash, "
                         f"{len(self.active_bets)} active bets")
-    
+
+    async def get_cash_balance(self) -> float:
+        """
+        Get current cash balance from database (single source of truth).
+        Calculates from sum of all transactions for accuracy.
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            # Get sum of all cash transactions
+            cursor.execute('SELECT SUM(amount) FROM cash_transactions')
+            result = cursor.fetchone()
+            balance = result[0] if result and result[0] is not None else 0.0
+            return balance
+        finally:
+            conn.close()
+
     async def _create_tables(self):
         """Create database tables for portfolio management"""
         conn = sqlite3.connect(self.db_path)
@@ -180,38 +201,30 @@ class PortfolioManager:
         """Load existing portfolio state from database"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         try:
-            # Load cash balance from latest transaction
-            cursor.execute('''
-            SELECT balance_after FROM cash_transactions 
-            ORDER BY timestamp DESC LIMIT 1
-            ''')
-            result = cursor.fetchone()
-            if result:
-                self.cash_balance = result[0]
-            
             # Load active bets
             cursor.execute('''
             SELECT * FROM bets WHERE status = ?
             ''', (BetStatus.ALIVE.value,))
-            
+
             rows = cursor.fetchall()
             columns = [description[0] for description in cursor.description]
-            
+
             for row in rows:
                 bet_data = dict(zip(columns, row))
                 bet = self._row_to_bet(bet_data)
-                
+
                 # Calculate current value and unrealized PnL
                 bet.current_value = bet.shares * bet.current_price
                 bet.unrealized_pnl = bet.current_value - bet.amount
-                
+
                 self.active_bets[bet.bet_id] = bet
-            
-            self.logger.info(f"Loaded portfolio state: ${self.cash_balance:.2f} cash, "
+
+            cash_balance = await self.get_cash_balance()
+            self.logger.info(f"Loaded portfolio state: ${cash_balance:.2f} cash, "
                            f"{len(self.active_bets)} active bets")
-            
+
         except Exception as e:
             self.logger.error(f"Error loading portfolio state: {e}")
         finally:
@@ -270,23 +283,26 @@ class PortfolioManager:
         
         # Import here to avoid circular import
         from ..kelly.calculator import KellyCalculator
-        
+
+        # Get current cash balance from DB
+        cash_balance = await self.get_cash_balance()
+
         # Calculate bet size using Kelly
         kelly_calc = KellyCalculator(self.config)
         recommendation = kelly_calc.calculate_bet_size(
             probability=probability,
             current_price=current_price,
-            available_capital=self.cash_balance
+            available_capital=cash_balance
         )
-        
+
         if not recommendation.is_favorable or recommendation.recommended_amount <= 0:
             raise ValueError(f"Kelly calculator recommends no bet: {recommendation.risk_warning}")
-        
+
         bet_amount = recommendation.recommended_amount
-        
+
         # Check if we have enough cash
-        if bet_amount > self.cash_balance:
-            raise ValueError(f"Insufficient cash: need ${bet_amount:.2f}, have ${self.cash_balance:.2f}")
+        if bet_amount > cash_balance:
+            raise ValueError(f"Insufficient cash: need ${bet_amount:.2f}, have ${cash_balance:.2f}")
         
         # Apply trading fees to bet amount
         trading_fee = bet_amount * (self.trading_fee_percentage / 100)
@@ -327,15 +343,18 @@ class PortfolioManager:
         # Store individual algorithm predictions for this bet
         await self._store_bet_predictions(bet_id, algorithms)
 
-        # Update cash balance
-        new_balance = self.cash_balance - bet_amount
-        await self._update_cash_balance(new_balance, f"Bet entry: {symbol}", bet_id, 'bet_entry')
-        self.cash_balance = new_balance
+        # Record cash transaction (negative amount = cash leaving)
+        await self._record_cash_transaction(
+            amount=-bet_amount,
+            description=f"Bet entry: {symbol}",
+            bet_id=bet_id,
+            transaction_type='bet_entry'
+        )
 
         # Add to active bets
         self.active_bets[bet_id] = bet
 
-        # Record portfolio snapshot (cash balance should already be correct in memory)
+        # Record portfolio snapshot
         await self._record_portfolio_snapshot(f"Placed bet: {symbol}")
         
         self.logger.info(f"Bet placed: {bet_id} - {symbol} ${bet_amount:.2f} "
@@ -417,24 +436,26 @@ class PortfolioManager:
     
     async def get_available_capital(self) -> float:
         """Get available capital for new bets"""
-        return self.cash_balance
-    
+        return await self.get_cash_balance()
+
     async def get_portfolio_summary(self) -> PortfolioSnapshot:
         """Get current portfolio summary"""
         # Calculate totals
         active_bets_value = sum(bet.current_value for bet in self.active_bets.values())
         total_invested = sum(bet.amount for bet in self.active_bets.values())
         unrealized_pnl = sum(bet.unrealized_pnl for bet in self.active_bets.values())
-        
+
         # Get realized P&L from database
         realized_pnl = await self._get_total_realized_pnl()
-        
-        total_capital = self.cash_balance + active_bets_value
-        
+
+        # Get cash balance from database
+        cash_balance = await self.get_cash_balance()
+        total_capital = cash_balance + active_bets_value
+
         return PortfolioSnapshot(
             timestamp=datetime.now(),
             total_capital=total_capital,
-            cash_balance=self.cash_balance,
+            cash_balance=cash_balance,
             active_bets_count=len(self.active_bets),
             active_bets_value=active_bets_value,
             total_invested=total_invested,
@@ -520,25 +541,40 @@ class PortfolioManager:
         finally:
             conn.close()
     
-    async def _update_cash_balance(self, new_balance: float, description: str,
-                                 bet_id: Optional[str] = None, transaction_type: str = 'manual'):
-        """Update cash balance and record transaction"""
+    async def _record_cash_transaction(self, amount: float, description: str,
+                                        bet_id: Optional[str] = None, transaction_type: str = 'manual'):
+        """
+        Record a cash transaction to the database.
+        The balance_after is calculated from the cumulative sum of all transactions.
+
+        Args:
+            amount: Transaction amount (positive = cash in, negative = cash out)
+            description: Description of the transaction
+            bet_id: Optional bet ID this transaction relates to
+            transaction_type: Type of transaction (bet_entry, bet_close, initial_capital, etc.)
+        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         try:
-            amount = new_balance - self.cash_balance
             timestamp = datetime.now().isoformat()
+
+            # Calculate new balance as sum of all transactions including this one
+            cursor.execute('SELECT SUM(amount) FROM cash_transactions')
+            result = cursor.fetchone()
+            current_sum = result[0] if result and result[0] is not None else 0.0
+            balance_after = current_sum + amount
 
             cursor.execute('''
             INSERT INTO cash_transactions (timestamp, amount, balance_after, description, bet_id, transaction_type)
             VALUES (?, ?, ?, ?, ?, ?)
-            ''', (timestamp, amount, new_balance, description, bet_id, transaction_type))
-            
+            ''', (timestamp, amount, balance_after, description, bet_id, transaction_type))
+
             conn.commit()
-            
+            self.logger.debug(f"Recorded transaction: {amount:+.2f} -> balance: {balance_after:.2f}")
+
         except Exception as e:
-            self.logger.error(f"Error updating cash balance: {e}")
+            self.logger.error(f"Error recording cash transaction: {e}")
             conn.rollback()
         finally:
             conn.close()
@@ -693,39 +729,30 @@ class PortfolioManager:
         """Close a bet when it hits win/loss thresholds"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         try:
-            # FIRST: Refresh cash balance from database to ensure accuracy
-            cursor.execute('''
-            SELECT balance_after FROM cash_transactions 
-            ORDER BY timestamp DESC LIMIT 1
-            ''')
-            balance_result = cursor.fetchone()
-            if balance_result:
-                self.cash_balance = balance_result[0]
-            
-            # First get the bet details
+            # Get the bet details
             cursor.execute('''
             SELECT symbol, amount, shares, entry_price, win_price, loss_price, status
             FROM bets WHERE bet_id = ?
             ''', (bet_id,))
-            
+
             bet_row = cursor.fetchone()
             if not bet_row:
                 raise Exception(f"Bet {bet_id} not found")
-            
+
             symbol, amount, shares, entry_price, win_price, loss_price, current_status = bet_row
-            
+
             if current_status != BetStatus.ALIVE.value:
                 self.logger.warning(f"Bet {bet_id} is already closed (status: {current_status})")
                 return
-            
+
             # Calculate current value and P&L
             current_value = shares * current_price
             exit_fee = current_value * (self.trading_fee_percentage / 100)  # Fee on exit value, not original amount
             net_exit_value = current_value - exit_fee
             realized_pnl = net_exit_value - amount  # P&L after fees
-            
+
             # Determine new status based on thresholds first, then P&L
             if current_price >= win_price:
                 new_status = BetStatus.WON
@@ -734,7 +761,7 @@ class PortfolioManager:
             else:
                 # Between thresholds - use final P&L (after fees) to determine status
                 new_status = BetStatus.WON if realized_pnl > 0 else BetStatus.LOST
-            
+
             # Update the bet in database
             cursor.execute('''
             UPDATE bets SET
@@ -753,39 +780,29 @@ class PortfolioManager:
                 realized_pnl,
                 bet_id
             ))
-            
-            # Update cash balance - add back the net exit value (already has fees deducted)
-            new_cash_balance = self.cash_balance + net_exit_value
-            
-            # Record cash transaction
-            cursor.execute('''
-            INSERT INTO cash_transactions (amount, balance_after, description, bet_id, transaction_type)
-            VALUES (?, ?, ?, ?, ?)
-            ''', (
-                net_exit_value,
-                new_cash_balance,
-                f"Bet closed: {symbol} - {close_reason}",
-                bet_id,
-                'bet_close'
-            ))
-            
+
             conn.commit()
-            
-            # Update internal cash balance
-            self.cash_balance = new_cash_balance
-            
+
             self.logger.info(f"Bet {bet_id} closed successfully - {new_status.value.upper()}: "
                            f"${realized_pnl:+.2f} P&L (after ${exit_fee:.2f} exit fee)")
-            
-            # Record portfolio snapshot after closing bet
-            await self._record_portfolio_snapshot(f"Bet closed: {symbol} - {close_reason}")
-            
+
         except Exception as e:
             self.logger.error(f"Error closing bet {bet_id}: {e}")
             conn.rollback()
-            raise e
+            raise
         finally:
             conn.close()
+
+        # Record cash transaction (outside the DB transaction for safety)
+        await self._record_cash_transaction(
+            amount=net_exit_value,
+            description=f"Bet closed: {symbol} - {close_reason}",
+            bet_id=bet_id,
+            transaction_type='bet_close'
+        )
+
+        # Record portfolio snapshot after closing bet
+        await self._record_portfolio_snapshot(f"Bet closed: {symbol} - {close_reason}")
     
     async def cleanup(self):
         """Clean up portfolio manager"""

@@ -179,7 +179,7 @@ class TradingDashboard:
             for asset in assets_to_process:
                 symbol = asset['symbol']
                 try:
-                    stock_data = await self.market_data.get_stock_data(symbol, days=90)  # Need more data for ML
+                    stock_data = await self.market_data.get_stock_data(symbol, days=150, extend_history=True)  # Incremental updates (accounts for weekends/holidays)
                     if stock_data is not None and not stock_data.empty:
                         market_data[symbol] = stock_data
                         self.logger.info(f"Loaded {len(stock_data)} days of data for {symbol}")
@@ -598,35 +598,67 @@ class TradingDashboard:
             st.error(f"Failed to settle bet: {e}")
             return False
 
-    async def place_bet(self, symbol: str, probability: float, current_price: float) -> bool:
+    async def place_bet(self, symbol: str, probability: float, current_price: float, algorithms_dict: dict = None) -> bool:
         """Place a bet for the given symbol using real portfolio manager"""
         try:
             if not self.portfolio_manager:
                 st.error("Portfolio manager not available")
                 return False
-            
-            # Create prediction dict for portfolio manager
+
+            # Create prediction dict for portfolio manager with full algorithm data
             prediction = {
                 'symbol': symbol,
                 'probability': probability,
                 'current_price': current_price,
-                'algorithms': [{'algorithm': 'dashboard_manual'}]  # Indicate this was manually placed via dashboard
+                'algorithms': []
             }
-            
+
+            # If we have individual algorithm predictions, include them
+            if algorithms_dict:
+                for algo_name, algo_prob in algorithms_dict.items():
+                    # Map display names back to internal names
+                    internal_name_map = {
+                        'lstm': 'lstm',
+                        'random_forest': 'rf',
+                        'sma': 'sma',
+                        'rsi': 'rsi',
+                        'regression': 'regression',
+                        'svm': 'svm'
+                    }
+
+                    internal_name = internal_name_map.get(algo_name, algo_name)
+
+                    if algo_prob is not None:
+                        prediction['algorithms'].append({
+                            'algorithm': internal_name,
+                            'probability': algo_prob,
+                            'error': None
+                        })
+                    else:
+                        # Algorithm failed or unavailable
+                        prediction['algorithms'].append({
+                            'algorithm': internal_name,
+                            'probability': None,
+                            'error': 'Not available'
+                        })
+            else:
+                # Fallback for manual placement without algorithm data
+                prediction['algorithms'] = [{'algorithm': 'dashboard_manual', 'probability': probability, 'error': None}]
+
             # Place the bet using portfolio manager
             await self.portfolio_manager.initialize()
             bet_id = await self.portfolio_manager.place_bet(prediction)
-            
+
             st.success(f"SUCCESS: Bet placed successfully!")
             st.info(f"Bet ID: {bet_id}")
             st.info(f"Symbol: {symbol} at ${current_price:.2f}")
             st.info(f"Probability: {probability:.1f}%")
-            
+
             # Refresh data to show the new bet
             await self.refresh_data()
-            
+
             return True
-            
+
         except Exception as e:
             st.error(f"ERROR: Failed to place bet: {e}")
             self.logger.error(f"Bet placement error: {e}")
@@ -1022,7 +1054,8 @@ class TradingDashboard:
                     success = asyncio.run(self.place_bet(
                         symbol=symbol,
                         probability=opp['final_probability'],
-                        current_price=opp['current_price']
+                        current_price=opp['current_price'],
+                        algorithms_dict=opp['algorithms']  # Pass the full algorithms dictionary
                     ))
                     if success:
                         st.success(f"✓ Bet placed successfully for {symbol}!")
@@ -1995,7 +2028,7 @@ class TradingDashboard:
         
         # Auto-refresh when not in automated mode
         if not st.session_state.auto_mode:
-            refresh_count = st_autorefresh(interval=15*60*1000, key="dashboard_refresh")  # 15 minutes
+            refresh_count = st_autorefresh(interval=60*60*1000, key="dashboard_refresh")  # 1 hour
             # When auto-refresh triggers, force data refresh
             if refresh_count > 0:
                 st.session_state.needs_refresh = True

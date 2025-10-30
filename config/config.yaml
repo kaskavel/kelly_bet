@@ -86,7 +86,12 @@ prediction:
       alpha: 1.0             # Regularization strength
       target_return: 0.03    # 3% target return for training
       prediction_horizon: 5  # Predict 5 periods ahead
-  
+    svm:  # Support Vector Machine
+      kernel: "rbf"          # rbf, linear, poly
+      C: 10.0                # Regularization parameter (higher = less conservative)
+      gamma: "scale"         # Kernel coefficient
+      target_return: 0.03    # 3% target return for training
+
   # Ensemble settings
   ensemble:
     initial_equal_weights: true
