@@ -1,6 +1,6 @@
 """
 Asset selection and management
-Handles S&P 500 stocks and top 50 cryptocurrencies.
+Handles S&P 500 stocks, top 50 cryptocurrencies, commodities (ETFs), and forex.
 """
 
 import logging
@@ -11,7 +11,74 @@ class AssetSelector:
     def __init__(self, config: Dict):
         self.config = config
         self.logger = logging.getLogger(__name__)
-        
+
+        # Commodity ETFs (highly liquid, track spot prices)
+        self.commodity_symbols = {
+            # Precious Metals
+            'GLD': 'SPDR Gold Trust',
+            'SLV': 'iShares Silver Trust',
+            'PPLT': 'Aberdeen Standard Platinum Shares ETF',
+            'PALL': 'Aberdeen Standard Palladium Shares ETF',
+
+            # Energy
+            'USO': 'United States Oil Fund (Crude Oil)',
+            'UNG': 'United States Natural Gas Fund',
+            'BNO': 'United States Brent Oil Fund',
+
+            # Agricultural
+            'CORN': 'Teucrium Corn Fund',
+            'WEAT': 'Teucrium Wheat Fund',
+            'SOYB': 'Teucrium Soybean Fund',
+
+            # Broad Commodities Baskets
+            'DBC': 'Invesco DB Commodity Index Tracking Fund',
+            'GSG': 'iShares S&P GSCI Commodity-Indexed Trust',
+            'PDBC': 'Invesco Optimum Yield Diversified Commodity',
+
+            # Industrial Metals
+            'CPER': 'United States Copper Index Fund',
+            'JJN': 'iPath Bloomberg Nickel Subindex Total Return ETN',
+
+            # Other Commodities
+            'URA': 'Global X Uranium ETF',
+            'WOOD': 'iShares Global Timber & Forestry ETF',
+        }
+
+        # Forex pairs (major and cross pairs)
+        self.forex_symbols = {
+            # Major Pairs (USD-based)
+            'EURUSD=X': 'Euro / US Dollar',
+            'GBPUSD=X': 'British Pound / US Dollar',
+            'USDJPY=X': 'US Dollar / Japanese Yen',
+            'USDCHF=X': 'US Dollar / Swiss Franc',
+            'AUDUSD=X': 'Australian Dollar / US Dollar',
+            'USDCAD=X': 'US Dollar / Canadian Dollar',
+            'NZDUSD=X': 'New Zealand Dollar / US Dollar',
+
+            # Cross Pairs (EUR-based)
+            'EURGBP=X': 'Euro / British Pound',
+            'EURJPY=X': 'Euro / Japanese Yen',
+            'EURCHF=X': 'Euro / Swiss Franc',
+            'EURAUD=X': 'Euro / Australian Dollar',
+            'EURCAD=X': 'Euro / Canadian Dollar',
+
+            # Cross Pairs (GBP-based)
+            'GBPJPY=X': 'British Pound / Japanese Yen',
+            'GBPCHF=X': 'British Pound / Swiss Franc',
+            'GBPAUD=X': 'British Pound / Australian Dollar',
+
+            # Cross Pairs (JPY-based)
+            'AUDJPY=X': 'Australian Dollar / Japanese Yen',
+            'CADJPY=X': 'Canadian Dollar / Japanese Yen',
+            'CHFJPY=X': 'Swiss Franc / Japanese Yen',
+
+            # Emerging Market Currencies
+            'USDCNY=X': 'US Dollar / Chinese Yuan',
+            'USDINR=X': 'US Dollar / Indian Rupee',
+            'USDBRL=X': 'US Dollar / Brazilian Real',
+            'USDMXN=X': 'US Dollar / Mexican Peso',
+        }
+
         # Complete S&P 500 symbols (503 symbols - current as of 2024/2025)
         self.sp500_symbols = [
             # Information Technology (78 symbols)
@@ -103,9 +170,9 @@ class AssetSelector:
         ]
     
     async def get_all_assets(self) -> List[Dict[str, str]]:
-        """Get all assets (stocks + crypto) to analyze"""
+        """Get all assets (stocks + crypto + commodities + forex) to analyze"""
         assets = []
-        
+
         # Add S&P 500 stocks
         for symbol in self.sp500_symbols:
             assets.append({
@@ -113,7 +180,7 @@ class AssetSelector:
                 'type': 'stock',
                 'exchange': 'NYSE/NASDAQ'
             })
-        
+
         # Add top crypto
         for symbol in self.crypto_symbols:
             assets.append({
@@ -121,20 +188,58 @@ class AssetSelector:
                 'type': 'crypto',
                 'exchange': 'binance'
             })
-        
-        self.logger.info(f"Selected {len(assets)} assets ({len(self.sp500_symbols)} stocks, {len(self.crypto_symbols)} crypto)")
+
+        # Add commodity ETFs
+        for symbol, name in self.commodity_symbols.items():
+            assets.append({
+                'symbol': symbol,
+                'type': 'commodity',
+                'exchange': 'NYSE/NASDAQ',
+                'name': name
+            })
+
+        # Add forex pairs
+        for symbol, name in self.forex_symbols.items():
+            assets.append({
+                'symbol': symbol,
+                'type': 'forex',
+                'exchange': 'FX',
+                'name': name
+            })
+
+        self.logger.info(
+            f"Selected {len(assets)} assets: "
+            f"{len(self.sp500_symbols)} stocks, "
+            f"{len(self.crypto_symbols)} crypto, "
+            f"{len(self.commodity_symbols)} commodities, "
+            f"{len(self.forex_symbols)} forex"
+        )
         return assets
-    
+
     async def get_stocks_only(self) -> List[Dict[str, str]]:
         """Get only stock assets"""
         return [
             {'symbol': symbol, 'type': 'stock', 'exchange': 'NYSE/NASDAQ'}
             for symbol in self.sp500_symbols
         ]
-    
+
     async def get_crypto_only(self) -> List[Dict[str, str]]:
         """Get only cryptocurrency assets"""
         return [
             {'symbol': symbol, 'type': 'crypto', 'exchange': 'binance'}
             for symbol in self.crypto_symbols
+        ]
+
+    async def get_commodities_only(self) -> List[Dict[str, str]]:
+        """Get only commodity ETF assets"""
+        return [
+            {'symbol': symbol, 'type': 'commodity', 'exchange': 'NYSE/NASDAQ', 'name': name}
+            for symbol, name in self.commodity_symbols.items()
+        ]
+
+    async def get_forex_only(self) -> List[Dict[str, str]]:
+        """Get only forex pair assets"""
+        return [
+            {'symbol': symbol, 'type': 'forex', 'exchange': 'FX', 'name': name}
+            for symbol, name in self.forex_symbols.items()
         ]

@@ -5,6 +5,7 @@ Streamlit-based trading dashboard for Kelly Criterion Trading System
 
 import asyncio
 import logging
+import struct
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
@@ -517,7 +518,25 @@ class TradingDashboard:
                     ''', (bet_id_full,))
 
                     predictions = cursor.fetchall()
-                    bet_data["algorithm_predictions"] = {algo: prob for algo, prob in predictions}
+                    # Convert probability to float, handling both binary and text formats
+                    def safe_convert_prob(prob):
+                        if prob is None:
+                            return 0.0
+                        if isinstance(prob, bytes):
+                            # Binary format - decode as 4-byte float (little-endian)
+                            try:
+                                return struct.unpack('<f', prob)[0]
+                            except:
+                                return 0.0
+                        try:
+                            return float(prob)
+                        except:
+                            return 0.0
+
+                    bet_data["algorithm_predictions"] = {
+                        algo: safe_convert_prob(prob)
+                        for algo, prob in predictions
+                    }
 
                     bet_rows.append(bet_data)
                     if bet_data["status"] == "alive":
@@ -587,8 +606,8 @@ class TradingDashboard:
                 # Close the bet manually (user initiated)
                 await self.portfolio_manager.close_bet(bet_id, "manual_settlement", current_price)
 
-                # Refresh data
-                await self.refresh_data()
+                # Only refresh portfolio and bets, NOT opportunities (no polling/retraining)
+                await self.refresh_portfolio_only()
                 return True
             else:
                 st.error(f"Bet {bet_id} not found in active bets")
@@ -654,8 +673,8 @@ class TradingDashboard:
             st.info(f"Symbol: {symbol} at ${current_price:.2f}")
             st.info(f"Probability: {probability:.1f}%")
 
-            # Refresh data to show the new bet
-            await self.refresh_data()
+            # Only refresh portfolio and bets data, NOT opportunities (no polling/retraining)
+            await self.refresh_portfolio_only()
 
             return True
 
@@ -719,6 +738,31 @@ class TradingDashboard:
 
         except Exception as e:
             self.logger.error(f"Error during active bet price update: {e}")
+
+    async def refresh_portfolio_only(self):
+        """Lightweight refresh - only update portfolio and bets, NO polling or ML retraining"""
+        try:
+            self.logger.info("Refreshing portfolio and bets (no polling/retraining)...")
+
+            # Check and settle bets that hit thresholds
+            await self.check_and_settle_bets()
+
+            # Update portfolio data
+            st.session_state.portfolio_data = await self.get_portfolio_data()
+
+            # Update active bets
+            st.session_state.active_bets_data = await self.get_active_bets_data()
+
+            # Update all bets data
+            st.session_state.all_bets_data = await self.get_all_bets_data()
+
+            # Do NOT update opportunities_data - keep existing cached predictions
+
+            self.logger.info("Portfolio and bets refreshed (opportunities cached)")
+
+        except Exception as e:
+            self.logger.error(f"Portfolio refresh failed: {e}", exc_info=True)
+            st.error(f"Failed to refresh portfolio: {e}")
 
     async def refresh_data(self):
         """Refresh all dashboard data with real-time progress"""
@@ -929,7 +973,7 @@ class TradingDashboard:
         with col1:
             asset_filter = st.selectbox(
                 "Asset Type:",
-                options=["all", "stock", "crypto"],
+                options=["all", "stock", "crypto", "commodity", "forex"],
                 key="asset_type_filter"
             )
 
@@ -1149,7 +1193,16 @@ class TradingDashboard:
 
         for idx, opp in enumerate(opportunities):
             # Create expandable section for each asset
-            asset_badge = "🪙" if opp.get('asset_type') == 'crypto' else "📈"
+            asset_type = opp.get('asset_type', 'stock')
+            if asset_type == 'crypto':
+                asset_badge = "🪙"
+            elif asset_type == 'commodity':
+                asset_badge = "🥇"  # Gold medal for commodities
+            elif asset_type == 'forex':
+                asset_badge = "💱"  # Currency exchange
+            else:
+                asset_badge = "📈"  # Stock/default
+
             prob_color = "🟢" if opp['final_probability'] > 70 else "🟡" if opp['final_probability'] > 60 else "🔴"
 
             # Get full asset name for display
@@ -2025,13 +2078,19 @@ class TradingDashboard:
             layout="wide",
             initial_sidebar_state="collapsed"
         )
-        
+
         # Auto-refresh when not in automated mode
         if not st.session_state.auto_mode:
             refresh_count = st_autorefresh(interval=60*60*1000, key="dashboard_refresh")  # 1 hour
-            # When auto-refresh triggers, force data refresh
-            if refresh_count > 0:
+
+            # Track last refresh count to detect actual changes (not just reruns)
+            if 'last_refresh_count' not in st.session_state:
+                st.session_state.last_refresh_count = 0
+
+            # Only trigger refresh when the count CHANGES (new auto-refresh happened)
+            if refresh_count > st.session_state.last_refresh_count:
                 st.session_state.needs_refresh = True
+                st.session_state.last_refresh_count = refresh_count
 
         # Handle refresh requests
         if st.session_state.needs_refresh:
