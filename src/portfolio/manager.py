@@ -502,10 +502,15 @@ class PortfolioManager:
         try:
             timestamp = datetime.now().isoformat()
             for algo_pred in algorithms:
+                # Ensure probability is a proper float, not bytes or numpy type
+                prob_value = algo_pred['probability']
+                if prob_value is not None:
+                    prob_value = float(prob_value)
+
                 cursor.execute('''
                 INSERT INTO bet_predictions (bet_id, algorithm, probability, timestamp)
                 VALUES (?, ?, ?, ?)
-                ''', (bet_id, algo_pred['algorithm'], algo_pred['probability'], timestamp))
+                ''', (bet_id, algo_pred['algorithm'], prob_value, timestamp))
 
             conn.commit()
             self.logger.debug(f"Stored {len(algorithms)} algorithm predictions for bet {bet_id}")
