@@ -9,7 +9,7 @@ trading:
   initial_capital: 10000.0  # Starting capital
   min_bet_amount: 100.0     # Minimum bet size
   max_bet_amount: 10000.0   # Maximum bet size  
-  max_bet_fraction: 0.05     # Maximum 5% of capital per bet
+  max_bet_fraction: 0.1     # Maximum 5% of capital per bet
   min_probability: 55.0     # Minimum 55% probability to bet
   max_loss_percentage: 5.0  # Maximum 5% loss threshold
   top_n_display: 10  # Number of top assets to show in manual mode
@@ -43,7 +43,12 @@ database:
 data_sources:
   stocks:
     provider: "yfinance"
-    index: "sp500"  # S&P 500 stocks
+    us_sp500: 503  # S&P 500 stocks
+    us_additional: 100  # Additional US stocks (NASDAQ, mid-cap)
+    japan: 100  # Nikkei top 100
+    china: 80  # Hong Kong + mainland top 80
+    germany: 40  # DAX 40 + additional
+    uk: 80  # FTSE top 80
     cache_duration: 1800  # 30 minutes
   crypto:
     provider: "ccxt"
@@ -60,6 +65,11 @@ data_sources:
     pairs: "major_and_cross"  # Major and cross currency pairs
     count: 22  # Number of forex pairs tracked
     cache_duration: 1800  # 30 minutes
+
+  # Currency conversion
+  currency:
+    base: "USD"  # All prices normalized to USD
+    auto_convert: true  # Automatically convert foreign currencies
   
 # Data Storage & Retention
 data_storage:

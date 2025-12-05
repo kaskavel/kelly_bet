@@ -13,6 +13,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from ..data.market_data import MarketDataManager
 from ..portfolio.manager import PortfolioManager
+from ..utils.currency_converter import CurrencyConverter
 import yaml
 
 
@@ -265,24 +266,64 @@ class BetMonitor:
             conn.close()
     
     async def _get_current_prices(self, symbols: List[str]) -> Dict[str, float]:
-        """Get current market prices for symbols"""
+        """Get current market prices for symbols (converted to USD)"""
         current_prices = {}
-        
+
         try:
-            # Get recent data (last few data points) for current prices
+            # Initialize currency converter
+            currency_converter = CurrencyConverter()
+
+            # Get forex rates first
+            forex_symbols = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'USDCHF=X', 'USDCNY=X',
+                           'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X']
+            forex_data = {}
+            for fx_symbol in forex_symbols:
+                try:
+                    fx_data = await self.market_data.get_stock_data(fx_symbol, days=2)
+                    if not fx_data.empty:
+                        forex_data[fx_symbol] = fx_data
+                except:
+                    pass
+
+            if forex_data:
+                currency_converter.update_rates(forex_data)
+
+            # Get prices for each symbol and convert to USD
             for symbol in symbols:
                 try:
                     recent_data = await self.market_data.get_stock_data(symbol, days=2)
                     if not recent_data.empty:
-                        current_prices[symbol] = float(recent_data['Close'].iloc[-1])
+                        raw_price = float(recent_data['Close'].iloc[-1])
+
+                        # Detect currency from symbol
+                        if symbol.endswith('.T'):  # Japan
+                            currency = 'JPY'
+                        elif symbol.endswith('.HK'):  # Hong Kong
+                            currency = 'HKD'
+                        elif symbol.endswith(('.SS', '.SZ')):  # China mainland
+                            currency = 'CNY'
+                        elif symbol.endswith('.DE'):  # Germany
+                            currency = 'EUR'
+                        elif symbol.endswith('.L'):  # UK
+                            currency = 'GBP'
+                        else:
+                            currency = 'USD'
+
+                        # Convert to USD if needed
+                        if currency != 'USD':
+                            usd_price = currency_converter.convert_to_usd(raw_price, currency)
+                            self.logger.debug(f"Converted {symbol}: {raw_price:.2f} {currency} → ${usd_price:.2f} USD")
+                            current_prices[symbol] = usd_price
+                        else:
+                            current_prices[symbol] = raw_price
                     else:
                         self.logger.warning(f"No recent data for {symbol}")
                 except Exception as e:
                     self.logger.error(f"Error getting current price for {symbol}: {e}")
-            
+
         except Exception as e:
             self.logger.error(f"Error fetching current prices: {e}")
-        
+
         return current_prices
     
     async def _monitor_and_settle_positions(self):
