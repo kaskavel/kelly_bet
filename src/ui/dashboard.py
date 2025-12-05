@@ -23,6 +23,7 @@ try:
     from src.portfolio.manager import PortfolioManager
     from src.data.market_data import MarketDataManager
     from src.utils.asset_names import get_display_name, get_asset_name
+    from src.utils.currency_converter import CurrencyConverter
     import yaml
     REAL_DATA_AVAILABLE = True
 except ImportError as e:
@@ -191,8 +192,46 @@ class TradingDashboard:
 
             self.logger.info(f"Successfully loaded market data for {len(market_data)} assets")
 
+            # Currency conversion: Convert all non-USD prices to USD
+            self.logger.info("Initializing currency converter...")
+            currency_converter = CurrencyConverter()
+
+            # Extract forex data and update converter rates
+            forex_data = {}
+            for symbol, data in market_data.items():
+                if symbol.endswith('=X'):  # Forex pair
+                    forex_data[symbol] = data
+
+            if forex_data:
+                currency_converter.update_rates(forex_data)
+                self.logger.info(f"Updated currency rates from {len(forex_data)} forex pairs")
+
+            # Convert all non-USD asset prices to USD
+            converted_market_data = {}
+            for symbol, data in market_data.items():
+                # Find asset currency
+                asset = next((a for a in assets_to_process if a['symbol'] == symbol), None)
+                currency = asset.get('currency', 'USD') if asset else 'USD'
+
+                if currency == 'USD' or symbol.endswith('=X'):
+                    # Already in USD or is a forex pair
+                    converted_market_data[symbol] = data
+                else:
+                    # Convert to USD
+                    try:
+                        converted_data = currency_converter.convert_price_series(data, currency)
+                        converted_market_data[symbol] = converted_data
+                        rate = currency_converter.get_rate(currency)
+                        self.logger.debug(f"Converted {symbol} from {currency} to USD (rate: {rate:.4f})")
+                    except Exception as e:
+                        self.logger.warning(f"Failed to convert {symbol} from {currency} to USD: {e}")
+                        # Use original data if conversion fails
+                        converted_market_data[symbol] = data
+
+            self.logger.info(f"All prices normalized to USD for ML processing")
+
             # Now generate REAL predictions using the PredictionEngine
-            if market_data:
+            if converted_market_data:
                 self.logger.info("Generating REAL ML predictions...")
                 try:
                     # Use the actual prediction engine to generate real predictions
@@ -207,8 +246,8 @@ class TradingDashboard:
                         st.session_state.force_retrain = False
 
                     self.logger.info("Generating real ML predictions (this may take time for training)...")
-                    predictions = await predictor.predict_all(market_data)
-                    self.logger.info(f"✅ Generated {len(predictions)} real ML predictions")
+                    predictions = await predictor.predict_all(converted_market_data)
+                    self.logger.info(f"✅ Generated {len(predictions)} real ML predictions (all in USD)")
 
                     for prediction in predictions:
                         symbol = prediction['symbol']
@@ -298,7 +337,8 @@ class TradingDashboard:
                             opportunities.append({
                                 "symbol": symbol,
                                 "asset_type": asset_type,
-                                "current_price": current_price,
+                                "currency": asset.get('currency', 'USD') if asset else 'USD',  # Track original currency
+                                "current_price": current_price,  # Already in USD after conversion
                                 "final_probability": final_probability,
                                 "algorithms": algorithms_dict,
                                 "kelly_fraction": kelly_rec.fraction_of_capital if kelly_rec.is_favorable else 0.0,
@@ -401,18 +441,65 @@ class TradingDashboard:
             await self.portfolio_manager.initialize()
             active_bets = await self.portfolio_manager.get_alive_bets()
 
-            # Get current market prices for all active bets
+            # Get current market prices for all active bets (with USD conversion)
             symbols = list(set(bet.symbol for bet in active_bets))
             current_prices = {}
 
             if symbols and self.market_data:
                 try:
                     await self.market_data.initialize()
+
+                    # Initialize currency converter
+                    currency_converter = CurrencyConverter()
+
+                    # Get forex rates first
+                    forex_symbols = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'USDCHF=X', 'USDCNY=X',
+                                   'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X']
+                    forex_data = {}
+                    for fx_symbol in forex_symbols:
+                        try:
+                            fx_data = await self.market_data.get_stock_data(fx_symbol, days=2)
+                            if not fx_data.empty:
+                                forex_data[fx_symbol] = fx_data
+                        except:
+                            pass
+
+                    if forex_data:
+                        currency_converter.update_rates(forex_data)
+
+                    # Get prices for each symbol and convert to USD
                     for symbol in symbols:
                         try:
                             recent_data = await self.market_data.get_stock_data(symbol, days=2)
                             if not recent_data.empty:
-                                current_prices[symbol] = float(recent_data['Close'].iloc[-1])
+                                raw_price = float(recent_data['Close'].iloc[-1])
+
+                                # Get currency for this bet
+                                bet_with_symbol = next((b for b in active_bets if b.symbol == symbol), None)
+                                if bet_with_symbol and hasattr(bet_with_symbol, 'currency'):
+                                    currency = bet_with_symbol.currency
+                                else:
+                                    # Fallback: detect from symbol
+                                    if symbol.endswith('.T'):
+                                        currency = 'JPY'
+                                    elif symbol.endswith('.HK'):
+                                        currency = 'HKD'
+                                    elif symbol.endswith(('.SS', '.SZ')):
+                                        currency = 'CNY'
+                                    elif symbol.endswith('.DE'):
+                                        currency = 'EUR'
+                                    elif symbol.endswith('.L'):
+                                        currency = 'GBP'
+                                    else:
+                                        currency = 'USD'
+
+                                # Convert to USD if needed
+                                if currency != 'USD':
+                                    usd_price = currency_converter.convert_to_usd(raw_price, currency)
+                                    self.logger.debug(f"Converted {symbol}: {raw_price:.2f} {currency} → ${usd_price:.2f} USD")
+                                    current_prices[symbol] = usd_price
+                                else:
+                                    current_prices[symbol] = raw_price
                         except Exception as e:
                             self.logger.warning(f"Failed to get current price for {symbol}: {e}")
                 except Exception as e:
@@ -542,16 +629,58 @@ class TradingDashboard:
                     if bet_data["status"] == "alive":
                         alive_symbols.add(bet_data["symbol"])
 
-                # Get current market prices for alive bets
+                # Get current market prices for alive bets (with USD conversion)
                 current_prices = {}
                 if alive_symbols and self.market_data:
                     try:
                         await self.market_data.initialize()
+
+                        # Initialize currency converter
+                        currency_converter = CurrencyConverter()
+
+                        # Get forex rates
+                        forex_symbols = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'USDCHF=X', 'USDCNY=X',
+                                       'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X']
+                        forex_data = {}
+                        for fx_symbol in forex_symbols:
+                            try:
+                                fx_data = await self.market_data.get_stock_data(fx_symbol, days=2)
+                                if not fx_data.empty:
+                                    forex_data[fx_symbol] = fx_data
+                            except:
+                                pass
+
+                        if forex_data:
+                            currency_converter.update_rates(forex_data)
+
+                        # Get prices and convert to USD
                         for symbol in alive_symbols:
                             try:
                                 recent_data = await self.market_data.get_stock_data(symbol, days=2)
                                 if not recent_data.empty:
-                                    current_prices[symbol] = float(recent_data['Close'].iloc[-1])
+                                    raw_price = float(recent_data['Close'].iloc[-1])
+
+                                    # Detect currency from symbol
+                                    if symbol.endswith('.T'):
+                                        currency = 'JPY'
+                                    elif symbol.endswith('.HK'):
+                                        currency = 'HKD'
+                                    elif symbol.endswith(('.SS', '.SZ')):
+                                        currency = 'CNY'
+                                    elif symbol.endswith('.DE'):
+                                        currency = 'EUR'
+                                    elif symbol.endswith('.L'):
+                                        currency = 'GBP'
+                                    else:
+                                        currency = 'USD'
+
+                                    # Convert to USD if needed
+                                    if currency != 'USD':
+                                        usd_price = currency_converter.convert_to_usd(raw_price, currency)
+                                        self.logger.debug(f"Converted {symbol}: {raw_price:.2f} {currency} → ${usd_price:.2f} USD")
+                                        current_prices[symbol] = usd_price
+                                    else:
+                                        current_prices[symbol] = raw_price
                             except Exception as e:
                                 self.logger.warning(f"Failed to get current price for {symbol}: {e}")
                     except Exception as e:
@@ -617,8 +746,16 @@ class TradingDashboard:
             st.error(f"Failed to settle bet: {e}")
             return False
 
-    async def place_bet(self, symbol: str, probability: float, current_price: float, algorithms_dict: dict = None) -> bool:
-        """Place a bet for the given symbol using real portfolio manager"""
+    async def place_bet(self, symbol: str, probability: float, current_price: float, algorithms_dict: dict = None, currency: str = 'USD') -> bool:
+        """Place a bet for the given symbol using real portfolio manager
+
+        Args:
+            symbol: Asset symbol
+            probability: Predicted probability
+            current_price: Current price in USD (already converted)
+            algorithms_dict: Algorithm predictions
+            currency: Original currency (for reference, price is already in USD)
+        """
         try:
             if not self.portfolio_manager:
                 st.error("Portfolio manager not available")
@@ -628,7 +765,8 @@ class TradingDashboard:
             prediction = {
                 'symbol': symbol,
                 'probability': probability,
-                'current_price': current_price,
+                'current_price': current_price,  # Already in USD
+                'currency': currency,  # Original currency for reference
                 'algorithms': []
             }
 
@@ -714,20 +852,55 @@ class TradingDashboard:
 
             self.logger.info(f"Updating prices for {len(active_bet_symbols)} active bets...")
 
+            # Initialize currency converter
+            currency_converter = CurrencyConverter()
+
+            # Get forex data to update exchange rates
+            forex_symbols = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'USDCHF=X', 'USDCNY=X',
+                           'AUDUSD=X', 'USDCAD=X', 'NZDUSD=X']
+            forex_data = {}
+            for fx_symbol in forex_symbols:
+                try:
+                    fx_data = await self.market_data.get_stock_data(fx_symbol, days=2)
+                    if not fx_data.empty:
+                        forex_data[fx_symbol] = fx_data
+                except:
+                    pass
+
+            if forex_data:
+                currency_converter.update_rates(forex_data)
+
             # Update prices for each active bet
             for bet_id, bet in self.portfolio_manager.active_bets.items():
                 try:
-                    # Get current market price
+                    # Get current market price (raw)
                     recent_data = await self.market_data.get_stock_data(bet.symbol, days=2)
                     if not recent_data.empty:
-                        current_price = float(recent_data['Close'].iloc[-1])
+                        raw_price = float(recent_data['Close'].iloc[-1])
 
-                        # Update bet's current price and calculated values
-                        bet.current_price = current_price
-                        bet.current_value = bet.shares * current_price
+                        # Convert to USD if needed
+                        bet_currency = bet.currency if hasattr(bet, 'currency') else 'USD'
+                        if bet_currency != 'USD':
+                            if not currency_converter.has_rate(bet_currency):
+                                self.logger.warning(f"No exchange rate available for {bet_currency}, using entry price")
+                                current_price_usd = bet.entry_price  # Fallback to entry price if no rate
+                            else:
+                                current_price_usd = currency_converter.convert_to_usd(raw_price, bet_currency)
+                                self.logger.info(f"Converted {bet.symbol}: {raw_price:.2f} {bet_currency} → ${current_price_usd:.2f} USD")
+                        else:
+                            current_price_usd = raw_price
+
+                        # Sanity check: USD price should be reasonable (not in thousands for most stocks)
+                        if current_price_usd > 10000:
+                            self.logger.error(f"CURRENCY BUG DETECTED: {bet.symbol} price ${current_price_usd:.2f} seems wrong! Raw: {raw_price}, Currency: {bet_currency}")
+                            current_price_usd = bet.entry_price  # Use entry price as safe fallback
+
+                        # Update bet's current price and calculated values (ALL IN USD)
+                        bet.current_price = current_price_usd
+                        bet.current_value = bet.shares * current_price_usd
                         bet.unrealized_pnl = bet.current_value - bet.amount
 
-                        self.logger.debug(f"Updated {bet.symbol}: ${bet.current_price:.2f} (P&L: ${bet.unrealized_pnl:+.2f})")
+                        self.logger.info(f"Updated {bet.symbol}: ${bet.current_price:.2f} USD (P&L: ${bet.unrealized_pnl:+.2f})")
                     else:
                         self.logger.warning(f"No recent data available for {bet.symbol}")
 
@@ -1099,7 +1272,8 @@ class TradingDashboard:
                         symbol=symbol,
                         probability=opp['final_probability'],
                         current_price=opp['current_price'],
-                        algorithms_dict=opp['algorithms']  # Pass the full algorithms dictionary
+                        algorithms_dict=opp['algorithms'],  # Pass the full algorithms dictionary
+                        currency=opp.get('currency', 'USD')  # Pass original currency
                     ))
                     if success:
                         st.success(f"✓ Bet placed successfully for {symbol}!")
@@ -1321,7 +1495,8 @@ class TradingDashboard:
                         success = asyncio.run(self.place_bet(
                             symbol=opp['symbol'],
                             probability=opp['final_probability'],
-                            current_price=opp['current_price']
+                            current_price=opp['current_price'],
+                            currency=opp.get('currency', 'USD')
                         ))
                         if success:
                             st.rerun()
@@ -1644,6 +1819,9 @@ class TradingDashboard:
 
     def render_closed_bets_section(self, closed_bets: List[Dict]):
         """Render closed bets section"""
+        # Filter out cancelled bets (they have no meaningful data)
+        closed_bets = [bet for bet in closed_bets if bet.get('status') != 'cancelled']
+
         st.subheader(f"Closed Bets ({len(closed_bets)})")
 
         if not closed_bets:
@@ -1672,8 +1850,13 @@ class TradingDashboard:
         total_realized_pnl = sum(bet['pnl'] for bet in filtered_bets)
 
         # Calculate total fees for closed bets (entry + exit fees)
-        total_fees = sum((bet['amount'] * fee_percentage / 100) + ((bet['shares'] * bet.get('exit_price', bet['current_price'])) * fee_percentage / 100)
-                        for bet in filtered_bets)
+        # Handle cancelled bets with no exit_price
+        total_fees = sum(
+            (bet['amount'] * fee_percentage / 100) +
+            ((bet['shares'] * (bet.get('exit_price') or bet.get('current_price', 0))) * fee_percentage / 100)
+            for bet in filtered_bets
+            if bet.get('exit_price') or bet.get('current_price')  # Skip bets with no price data
+        )
         total_pnl_after_fees = total_realized_pnl - total_fees
 
         won_bets = [bet for bet in filtered_bets if bet['status'] == 'won']

@@ -27,22 +27,23 @@ class Bet:
     bet_id: str
     symbol: str
     asset_type: str           # 'stock' or 'crypto'
-    entry_price: float
+    entry_price: float        # ALWAYS in USD (converted if needed)
     entry_time: datetime
     amount: float             # Dollar amount invested
     shares: float             # Number of shares/units
     win_threshold: float      # Percentage gain to trigger win
     loss_threshold: float     # Percentage loss to trigger loss
-    win_price: float          # Price at which bet wins
-    loss_price: float         # Price at which bet loses
-    current_price: float      # Latest price
+    win_price: float          # Price at which bet wins (in USD)
+    loss_price: float         # Price at which bet loses (in USD)
+    current_price: float      # Latest price (in USD)
     current_value: float      # Current market value
     unrealized_pnl: float     # Unrealized P&L
     status: BetStatus
     algorithm_used: str       # Which algorithm generated this bet
     probability_when_placed: float  # Probability when bet was placed
+    currency: str = 'USD'     # Original currency (for reference)
     exit_time: Optional[datetime] = None
-    exit_price: Optional[float] = None
+    exit_price: Optional[float] = None  # ALWAYS in USD
     realized_pnl: Optional[float] = None
 
 
@@ -250,6 +251,7 @@ class PortfolioManager:
             status=BetStatus(row['status']),
             algorithm_used=row['algorithm_used'] or 'unknown',
             probability_when_placed=row['probability_when_placed'] or 0.0,
+            currency=row.get('currency', 'USD'),  # Original currency
             exit_time=datetime.fromisoformat(row['exit_time']) if row['exit_time'] else None,
             exit_price=row['exit_price'],
             realized_pnl=row['realized_pnl']
@@ -267,11 +269,12 @@ class PortfolioManager:
         """
         symbol = prediction['symbol']
         probability = prediction['probability']
-        current_price = prediction['current_price']
+        current_price = prediction['current_price']  # Already in USD
+        currency = prediction.get('currency', 'USD')  # Original currency for reference
         algorithms = prediction.get('algorithms', [])
-        
-        self.logger.info(f"Placing bet for {symbol} at ${current_price:.2f} "
-                        f"with {probability:.1f}% probability")
+
+        self.logger.info(f"Placing bet for {symbol} at ${current_price:.2f} USD "
+                        f"(original currency: {currency}) with {probability:.1f}% probability")
         
         # Check if we can place more bets
         if len(self.active_bets) >= self.max_concurrent_bets:
@@ -321,20 +324,21 @@ class PortfolioManager:
             bet_id=bet_id,
             symbol=symbol,
             asset_type='stock',  # TODO: Determine from symbol
-            entry_price=current_price,
+            entry_price=current_price,  # Already in USD
             entry_time=datetime.now(),
             amount=net_bet_amount,
             shares=shares,
             win_threshold=win_threshold,
             loss_threshold=loss_threshold,
-            win_price=win_price,
-            loss_price=loss_price,
-            current_price=current_price,
+            win_price=win_price,  # In USD
+            loss_price=loss_price,  # In USD
+            current_price=current_price,  # In USD
             current_value=net_bet_amount,
             unrealized_pnl=0.0,
             status=BetStatus.ALIVE,
             algorithm_used=algorithm_used,
-            probability_when_placed=probability
+            probability_when_placed=probability,
+            currency=currency  # Store original currency for reference
         )
         
         # Store bet
@@ -473,14 +477,14 @@ class PortfolioManager:
             INSERT INTO bets (
                 bet_id, symbol, asset_type, entry_price, entry_time, amount, shares,
                 win_threshold, loss_threshold, win_price, loss_price, current_price,
-                status, algorithm_used, probability_when_placed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                status, algorithm_used, probability_when_placed, currency
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 bet.bet_id, bet.symbol, bet.asset_type, bet.entry_price,
                 bet.entry_time.isoformat(), bet.amount, bet.shares,
                 bet.win_threshold, bet.loss_threshold, bet.win_price, bet.loss_price,
                 bet.current_price, bet.status.value, bet.algorithm_used,
-                bet.probability_when_placed
+                bet.probability_when_placed, bet.currency
             ))
             
             conn.commit()
