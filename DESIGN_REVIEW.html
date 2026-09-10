@@ -1,0 +1,797 @@
+<title>Where the Edge Went</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F7F8F5;
+    --panel:#FFFFFF;
+    --panel-2:#EFF1EC;
+    --ink:#171A19;
+    --ink-2:#3D4442;
+    --muted:#646D69;
+    --faint:#8B948F;
+    --rule:#D8DCD4;
+    --rule-strong:#BCC2B9;
+    --claim:#C4791A;
+    --actual:#0A8C7E;
+    --alarm:#A32B2B;
+    --shadow:0 1px 2px rgba(23,26,25,.06),0 8px 24px -16px rgba(23,26,25,.18);
+    --serif:"Spectral",Georgia,"Times New Roman",serif;
+    --sans:"Archivo","Helvetica Neue",Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#101312;
+      --panel:#181C1A;
+      --panel-2:#1F2422;
+      --ink:#E8ECE8;
+      --ink-2:#C3CAC5;
+      --muted:#98A29C;
+      --faint:#77817B;
+      --rule:#2B312E;
+      --rule-strong:#3C443F;
+      --claim:#C4791A;
+      --actual:#0A8C7E;
+      --alarm:#D46060;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -18px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#101312;
+    --panel:#181C1A;
+    --panel-2:#1F2422;
+    --ink:#E8ECE8;
+    --ink-2:#C3CAC5;
+    --muted:#98A29C;
+    --faint:#77817B;
+    --rule:#2B312E;
+    --rule-strong:#3C443F;
+    --claim:#C4791A;
+    --actual:#0A8C7E;
+    --alarm:#D46060;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -18px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--serif);
+    font-size:16.5px;
+    line-height:1.66;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px 96px}
+  .col{max-width:660px}
+  h1,h2,h3,h4,.eyebrow,.num,.chip,th,.grade{font-family:var(--sans)}
+  .mono,.num,td.n,th.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* ---------- masthead ---------- */
+  header.mast{padding:56px 0 0}
+  .eyebrow{
+    font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  }
+  .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--claim);flex:none}
+  h1{
+    font-size:clamp(38px,6.2vw,64px);line-height:1.02;font-weight:700;
+    letter-spacing:-.028em;margin:16px 0 0;text-wrap:balance;max-width:16ch;
+  }
+  .standfirst{
+    font-size:20px;line-height:1.5;color:var(--ink-2);margin:20px 0 0;max-width:56ch;
+  }
+  .standfirst em{font-style:italic;color:var(--ink)}
+
+  /* ---------- headline readings ---------- */
+  .readings{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+    gap:1px;background:var(--rule);border:1px solid var(--rule);
+    margin:40px 0 0;border-radius:3px;overflow:hidden;
+  }
+  .reading{background:var(--panel);padding:18px 20px 20px}
+  .reading .k{
+    font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .reading .v{
+    font-family:var(--mono);font-variant-numeric:tabular-nums;
+    font-size:31px;font-weight:500;letter-spacing:-.02em;line-height:1.15;margin-top:8px;
+  }
+  .reading .s{font-family:var(--sans);font-size:12px;color:var(--faint);line-height:1.4;margin-top:4px}
+  .reading.claim .v{color:var(--claim)}
+  .reading.actual .v{color:var(--actual)}
+  .reading.alarm .v{color:var(--alarm)}
+
+  /* ---------- structure ---------- */
+  section{margin-top:76px}
+  .sechead{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--rule-strong);padding-bottom:11px;margin-bottom:26px}
+  .sechead .idx{
+    font-family:var(--mono);font-size:12px;font-weight:600;color:var(--claim);
+    letter-spacing:.04em;flex:none;padding-top:3px;
+  }
+  h2{font-size:clamp(23px,2.7vw,30px);font-weight:600;letter-spacing:-.017em;margin:0;line-height:1.2;text-wrap:balance}
+  h3{font-size:18px;font-weight:600;letter-spacing:-.008em;margin:34px 0 8px}
+  h4{font-size:12.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  p{margin:0 0 16px}
+  .col p:last-child{margin-bottom:0}
+  strong{font-weight:600;color:var(--ink)}
+  a{color:var(--actual)}
+  code,.mn{
+    font-family:var(--mono);font-size:.87em;background:var(--panel-2);
+    padding:1px 5px;border-radius:2px;color:var(--ink-2);
+    white-space:nowrap;
+  }
+
+  .pull{
+    border-left:2px solid var(--claim);padding:2px 0 2px 20px;margin:26px 0;
+    font-size:19px;line-height:1.5;color:var(--ink);max-width:52ch;
+  }
+
+  /* ---------- charts ---------- */
+  figure{margin:32px 0 0;background:var(--panel);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow)}
+  .figtop{padding:20px 22px 0}
+  figcaption{padding:16px 22px 20px;font-size:13.5px;line-height:1.55;color:var(--muted);border-top:1px solid var(--rule);margin-top:18px}
+  figcaption b{color:var(--ink-2);font-weight:600}
+  .figtitle{font-family:var(--sans);font-size:15.5px;font-weight:600;letter-spacing:-.008em;margin:0}
+  .figsub{font-family:var(--sans);font-size:12.5px;color:var(--muted);margin:3px 0 0}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 0;font-family:var(--sans);font-size:12px;color:var(--ink-2)}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .swatch{width:10px;height:10px;border-radius:50%;flex:none}
+  .swatch.line{width:16px;height:0;border-top:1.5px dashed var(--ink-2);border-radius:0}
+  .swatch.line.faint{border-top-style:dotted;border-top-color:var(--faint)}
+
+  .scroll{overflow-x:auto;padding:18px 22px 0}
+  .plot{min-width:620px}
+  .rows{position:relative}
+  .prow{display:grid;align-items:center;column-gap:14px}
+  .plot.cal .prow{grid-template-columns:96px 34px minmax(190px,1fr) 62px 58px 56px}
+  .plot.est .prow{grid-template-columns:112px minmax(190px,1fr) 62px 96px}
+  .prow.head{
+    font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--faint);padding-bottom:9px;
+  }
+  .prow.head .r{text-align:right}
+  .prow.body{padding:7px 0;position:relative;z-index:2}
+  .rlabel{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--ink)}
+  .rsub{font-family:var(--mono);font-size:11.5px;color:var(--faint);text-align:right}
+  .rval{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;text-align:right}
+  .rval.c{color:var(--claim)}
+  .rval.a{color:var(--actual);font-weight:500}
+  .rval.g{color:var(--muted)}
+  .rnote{font-family:var(--sans);font-size:11px;color:var(--faint);text-align:right;line-height:1.3}
+
+  .track{position:relative;height:22px}
+  .conn{position:absolute;top:50%;height:2px;background:var(--rule-strong);transform:translateY(-50%)}
+  .stem{position:absolute;top:50%;left:0;height:2px;background:var(--rule-strong);transform:translateY(-50%)}
+  .pt{
+    position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+    transform:translate(-50%,-50%);border:2px solid var(--panel);
+  }
+  .pt.c{background:var(--claim)}
+  .pt.a{background:var(--actual)}
+
+  .axis{position:relative;height:26px;margin-top:4px;border-top:1px solid var(--rule)}
+  .tick{position:absolute;top:6px;transform:translateX(-50%);font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+  .vlines{position:absolute;inset:0;z-index:1;pointer-events:none}
+  .vline{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--ink-2);opacity:.55}
+  .vline.faint{border-left-style:dotted;border-left-color:var(--faint);opacity:.7}
+
+  /* ---------- scorecard ---------- */
+  .card{background:var(--panel);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px}
+  th{
+    text-align:left;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--faint);padding:14px 16px 11px;border-bottom:1px solid var(--rule-strong);white-space:nowrap;
+  }
+  td{padding:13px 16px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.45}
+  tbody tr:last-child td{border-bottom:0}
+  td.sys{font-weight:600;width:1%;white-space:nowrap;color:var(--ink)}
+  td.ev{color:var(--muted);font-size:13.5px}
+  td.ev .mn{font-size:12px}
+  td.gr{width:1%;white-space:nowrap;padding-left:0}
+  .grade{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:34px;height:26px;padding:0 8px;border-radius:2px;
+    font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:.01em;
+  }
+  .g-f{background:var(--alarm);color:#fff}
+  .g-d{background:color-mix(in srgb,var(--alarm) 18%,var(--panel));color:var(--alarm);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--alarm) 40%,transparent)}
+  .g-c{background:var(--panel-2);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--rule-strong)}
+  .g-b{background:color-mix(in srgb,var(--actual) 15%,var(--panel));color:var(--actual);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--actual) 40%,transparent)}
+  .overall{
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:16px;
+    padding:20px 16px;background:var(--panel-2);border-top:1px solid var(--rule-strong);
+  }
+  .overall .g{font-family:var(--mono);font-size:36px;font-weight:600;color:var(--alarm);line-height:1}
+  .overall .t{font-family:var(--sans);font-size:14px;color:var(--ink-2);max-width:64ch;line-height:1.5}
+
+  /* ---------- failure chain ---------- */
+  .chain{margin-top:28px;display:flex;flex-direction:column;gap:0}
+  .stage{
+    display:grid;grid-template-columns:26px 1fr;column-gap:18px;
+    padding:22px 0;border-bottom:1px solid var(--rule);
+  }
+  .stage:last-child{border-bottom:0}
+  .rail{position:relative;display:flex;justify-content:center}
+  .rail i{
+    position:absolute;top:2px;width:22px;height:22px;border-radius:50%;
+    background:var(--panel);box-shadow:inset 0 0 0 1.5px var(--rule-strong);
+    font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted);font-style:normal;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .rail::before{content:"";position:absolute;top:26px;bottom:-22px;width:1px;background:var(--rule)}
+  .stage:last-child .rail::before{display:none}
+  .stage h3{margin:0 0 6px;font-size:16.5px}
+  .stage .want,.stage .got{font-size:14.5px;line-height:1.55;display:flex;gap:9px;margin-top:5px}
+  .stage .tag{
+    font-family:var(--sans);font-size:9.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    flex:none;width:52px;padding-top:5px;
+  }
+  .stage .want .tag{color:var(--faint)}
+  .stage .got .tag{color:var(--alarm)}
+  .stage .want div{color:var(--muted)}
+  .stage .got div{color:var(--ink-2)}
+
+  /* ---------- defect list ---------- */
+  .defects{margin-top:26px;display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+  .defect{background:var(--panel);padding:16px 18px;display:grid;grid-template-columns:1fr;gap:5px}
+  .defect .top{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+  .defect .sev{
+    font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 6px;border-radius:2px;flex:none;
+  }
+  .sev.crit{background:var(--alarm);color:#fff}
+  .sev.high{background:color-mix(in srgb,var(--alarm) 16%,var(--panel));color:var(--alarm);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--alarm) 35%,transparent)}
+  .sev.med{background:var(--panel-2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--rule-strong)}
+  .defect .ttl{font-family:var(--sans);font-size:14.5px;font-weight:600;letter-spacing:-.005em}
+  .defect .loc{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+  .defect .txt{font-size:14px;line-height:1.55;color:var(--muted)}
+  .defect .txt b{color:var(--ink-2);font-weight:600}
+
+  /* ---------- fix blocks ---------- */
+  .fixes{margin-top:26px;display:flex;flex-direction:column;gap:20px}
+  .fix{background:var(--panel);border:1px solid var(--rule);border-left:2px solid var(--actual);border-radius:3px;padding:20px 22px;box-shadow:var(--shadow)}
+  .fix .fh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .fix .fn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--actual);flex:none}
+  .fix h3{margin:0;font-size:17px}
+  .fix p{font-size:14.5px;line-height:1.6;color:var(--ink-2);margin:0 0 12px;max-width:74ch}
+  .fix p:last-child{margin-bottom:0}
+  .fix ul{margin:0 0 12px;padding-left:20px;font-size:14.5px;line-height:1.6;color:var(--ink-2)}
+  .fix li{margin-bottom:5px}
+  .fix li::marker{color:var(--faint)}
+  .effect{
+    display:inline-flex;align-items:center;gap:8px;margin-top:4px;
+    font-family:var(--sans);font-size:12px;font-weight:500;color:var(--actual);
+    background:color-mix(in srgb,var(--actual) 9%,var(--panel));
+    border:1px solid color-mix(in srgb,var(--actual) 28%,transparent);
+    padding:5px 11px;border-radius:2px;line-height:1.35;
+  }
+
+  /* ---------- ordered plan ---------- */
+  .plan{margin-top:26px;background:var(--panel);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow);overflow:hidden}
+  .step{display:grid;grid-template-columns:auto 1fr auto;column-gap:16px;align-items:baseline;padding:15px 18px;border-bottom:1px solid var(--rule)}
+  .step:last-child{border-bottom:0}
+  .step .o{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--faint)}
+  .step .w{font-family:var(--sans);font-size:14.5px;line-height:1.5;color:var(--ink)}
+  .step .w small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;font-family:var(--sans)}
+  .step .c{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+
+  .foot{margin-top:72px;padding-top:22px;border-top:1px solid var(--rule);font-size:13px;color:var(--faint);line-height:1.6;max-width:74ch}
+  .foot b{color:var(--muted);font-weight:600}
+
+  @media (max-width:720px){
+    body{font-size:16px}
+    .wrap{padding:0 18px 72px}
+    .reading .v{font-size:26px}
+    .stage{grid-template-columns:22px 1fr;column-gap:14px}
+    .stage .want,.stage .got{flex-direction:column;gap:2px}
+    .stage .tag{width:auto;padding-top:0}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  :focus-visible{outline:2px solid var(--claim);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow"><span class="dot"></span>Design review · kelly_bet · branch <span class="mono">updates</span></div>
+  <h1>Where the Edge Went</h1>
+  <p class="standfirst">Six months, 87 bets, 860 assets scored every cycle. The system reported an average win probability of 63.7% and delivered 44.1%. The gap is not a tuning problem — it is <em>the architecture working as designed.</em></p>
+
+  <div class="readings">
+    <div class="reading claim">
+      <div class="k">Probability claimed</div>
+      <div class="v">63.7%</div>
+      <div class="s">mean at bet placement</div>
+    </div>
+    <div class="reading actual">
+      <div class="k">Win rate delivered</div>
+      <div class="v">44.1%</div>
+      <div class="s">37 of 84 closed bets</div>
+    </div>
+    <div class="reading">
+      <div class="k">Break-even needed</div>
+      <div class="v">43.7%</div>
+      <div class="s">at realized payoff ratio</div>
+    </div>
+    <div class="reading alarm">
+      <div class="k">Edge per bet</div>
+      <div class="v">+0.05%</div>
+      <div class="s">of stake — statistically zero</div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="sechead"><span class="idx">01</span><h2>The verdict</h2></div>
+  <div class="col">
+    <p>This project is <strong>carefully built and not carefully designed</strong>. The engineering is real: clean module boundaries, typed dataclasses, async orchestration, config-driven parameters, model persistence, a working Streamlit dashboard, a consistent cash ledger. Someone paid attention.</p>
+    <p>But almost all of that care went into the plumbing, and almost none into the one question that decides whether the system can ever work: <em>is the number I call a probability actually a probability?</em> It isn't. Six estimators produce six differently-scaled scores for the same event, get averaged into a number centred on 50, and that number is fed straight into Kelly sizing as if it were calibrated. Everything downstream is a well-made machine turning a meaningless input into confident output.</p>
+    <div class="pull">The system cannot report “no opportunity.” On any given cycle, 23% of the 860-asset universe scores above the 60% auto-bet threshold, and the top-ranked asset always reads 67–72%. That output is guaranteed by the architecture whether or not any information exists.</div>
+    <p>The good news is buried in the same data, and it is genuinely good: <strong>the ranking carries signal even though the scale doesn't.</strong> Realized win rate rises monotonically across the score bands — 27.3%, 41.7%, 45.0%, 56.7%. The top band earned +2.35% on turnover; the bottom band lost 2.73%. There is something here. It is being drowned by a threshold set nine points too low on a scale that doesn't mean what it says.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="idx">02</span><h2>What the ledger says</h2></div>
+  <div class="col">
+    <p>87 bets between 8 October 2025 and 11 March 2026, closed through 9 April 2026. Total realized P&amp;L <strong>+$216.92</strong> on <strong>$41,943.66</strong> of turnover — a return of <strong>+0.52%</strong> on capital deployed, over six months, against a starting bankroll of $10,000. The cash ledger reconciles to the cent; the strategy does not.</p>
+  </div>
+
+  <figure>
+    <div class="figtop">
+      <p class="figtitle">Every score band overstates itself, and the overstatement is largest where it hurts most</p>
+      <p class="figsub">Mean probability claimed vs. win rate delivered, by score band · 84 closed bets</p>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--claim)"></i>Claimed</span>
+        <span><i class="swatch" style="background:var(--actual)"></i>Delivered</span>
+        <span><i class="swatch line"></i>Break-even (43.7%)</span>
+        <span><i class="swatch line faint"></i>Random-walk baseline (37.5%)</span>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="plot cal">
+        <div class="prow head">
+          <div>Band</div><div class="r">n</div><div></div>
+          <div class="r">Claimed</div><div class="r">Actual</div><div class="r">Gap</div>
+        </div>
+        <div class="rows">
+          <div class="vlines">
+            <div class="vline" style="left:calc(158px + (100% - 376px) * 0.3955)"></div>
+            <div class="vline faint" style="left:calc(158px + (100% - 376px) * 0.2917)"></div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">50–58%</div><div class="rsub">22</div>
+            <div class="track">
+              <div class="conn" style="left:12.17%;width:44.50%"></div>
+              <div class="pt a" style="left:12.17%"></div><div class="pt c" style="left:56.67%"></div>
+            </div>
+            <div class="rval c">54.0%</div><div class="rval a">27.3%</div><div class="rval g">−26.7</div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">58–62%</div><div class="rsub">12</div>
+            <div class="track">
+              <div class="conn" style="left:36.17%;width:31.83%"></div>
+              <div class="pt a" style="left:36.17%"></div><div class="pt c" style="left:68.00%"></div>
+            </div>
+            <div class="rval c">60.8%</div><div class="rval a">41.7%</div><div class="rval g">−19.1</div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">62–66%</div><div class="rsub">20</div>
+            <div class="track">
+              <div class="conn" style="left:41.67%;width:31.66%"></div>
+              <div class="pt a" style="left:41.67%"></div><div class="pt c" style="left:73.33%"></div>
+            </div>
+            <div class="rval c">64.0%</div><div class="rval a">45.0%</div><div class="rval g">−19.0</div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">66%+</div><div class="rsub">30</div>
+            <div class="track">
+              <div class="conn" style="left:61.17%;width:25.16%"></div>
+              <div class="pt a" style="left:61.17%"></div><div class="pt c" style="left:86.33%"></div>
+            </div>
+            <div class="rval c">71.8%</div><div class="rval a">56.7%</div><div class="rval g">−15.1</div>
+          </div>
+        </div>
+        <div class="prow" style="grid-template-columns:96px 34px minmax(190px,1fr) 62px 58px 56px">
+          <div></div><div></div>
+          <div class="axis">
+            <span class="tick" style="left:0%">20%</span>
+            <span class="tick" style="left:16.67%">30%</span>
+            <span class="tick" style="left:33.33%">40%</span>
+            <span class="tick" style="left:50%">50%</span>
+            <span class="tick" style="left:66.67%">60%</span>
+            <span class="tick" style="left:83.33%">70%</span>
+            <span class="tick" style="left:100%">80%</span>
+          </div>
+          <div></div><div></div><div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Two things are true at once. <b>The level is broken</b> — every band overstates by 15 to 27 points, and a binomial test against the claimed 63.7% gives z = −3.75, decisively rejected. <b>The ranking works</b> — delivered win rate climbs with the score at every step (Spearman ρ = +0.19 against realized return). The 50–58% band is where the money died: 22 bets, −$210.58. Betting only the 66%+ band would have returned +2.35% on turnover instead of +0.52%, on 36% of the trades.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="sechead"><span class="idx">03</span><h2>The one design error everything follows from</h2></div>
+  <div class="col">
+    <p>A bet in this system is: <em>buy, exit at +5%, stop at −3%.</em> Whether it wins is a <strong>first-touch double-barrier event</strong> — which price level gets touched first. For an asset with no drift, that probability is fixed by the barrier geometry alone:</p>
+  </div>
+
+  <div class="card" style="margin-top:26px;padding:22px 24px;max-width:660px">
+    <div class="mono" style="font-size:15px;line-height:2.1;color:var(--ink)">
+      P(touch +5% before −3%) = <span style="color:var(--actual)">3 / (5 + 3)</span> = <span style="color:var(--actual)">37.5%</span>
+    </div>
+    <div style="font-family:var(--sans);font-size:13.5px;color:var(--muted);margin-top:12px;line-height:1.55">
+      Independent of volatility. Independent of the asset. Expected value at 37.5% is exactly zero — as it must be for a coin flip.
+    </div>
+  </div>
+
+  <div class="col" style="margin-top:26px">
+    <p>So <strong>37.5% is the neutral line, not 50%.</strong> The entire threshold apparatus — the hard 50% floor in <code>trading_system.py</code>, <code>min_probability: 55.0</code>, <code>auto_threshold: 60.0</code> — is anchored to a number that has no meaning for this payoff. A genuine 45% first-touch probability would be a strong, tradeable edge. The system would reject it and instead demand 60% from a scale that is not measuring the same event at all.</p>
+    <p>And nothing in the codebase estimates that event. Look at what the models are actually trained to predict:</p>
+    <ul style="margin:0 0 16px;padding-left:22px;max-width:66ch">
+      <li style="margin-bottom:6px"><strong>Random Forest / SVM</strong> — label is <code>Close.shift(-5)/Close - 1 &gt; 0.03</code>: a fixed 5-bar terminal return. Not a path, not a barrier, no stop.</li>
+      <li style="margin-bottom:6px"><strong>Regression / LSTM</strong> — a point forecast of 5-bar return, squashed through <code>norm.cdf(r/0.02)</code> or <code>sigmoid(10r)</code>. That estimates P(return &gt; 0), a different question, and the squash saturates so hard that LSTM returns above 60% on <strong>84.7%</strong> of all calls (regression); the LSTM had the same defect, visible once its BLOB-corrupted rows were repaired.</li>
+      <li><strong>SMA / RSI</strong> — hand-assigned point scores (<code>sma_signal * 25</code>, <code>momentum * 20</code>, …) summed to a 0–100 number. Not probabilities in any sense, and structurally contradictory: one is a momentum rule, the other is mean-reversion.</li>
+    </ul>
+    <p>The realized 44.05% win rate sits 6.5 points above the 37.5% baseline — z = +1.24, which at n = 84 is <strong>indistinguishable from no edge at all</strong>. Meanwhile the average bet is held 18.8 days while every model predicts 5 bars ahead.</p>
+  </div>
+
+  <figure>
+    <div class="figtop">
+      <p class="figtitle">Six estimators, one event, a 74-point disagreement</p>
+      <p class="figsub">Mean output across all 698k stored predictions · all six claim to answer the same question</p>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--claim)"></i>Mean probability reported</span>
+        <span><i class="swatch line"></i>Win rate actually delivered (38.5%)</span>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="plot est">
+        <div class="prow head">
+          <div>Algorithm</div><div></div><div class="r">Mean</div><div class="r">Calls ≥ 60%</div>
+        </div>
+        <div class="rows">
+          <div class="vlines">
+            <div class="vline" style="left:calc(126px + (100% - 312px) * 0.3846)"></div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">lstm</div>
+            <div class="track"><div class="stem" style="width:60.00%"></div><div class="pt c" style="left:60.00%"></div></div>
+            <div class="rval c">60.0%</div><div class="rnote">31.4%</div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">regression</div>
+            <div class="track"><div class="stem" style="width:78.13%"></div><div class="pt c" style="left:78.13%"></div></div>
+            <div class="rval c">78.1%</div><div class="rnote">84.7%</div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">rsi</div>
+            <div class="track"><div class="stem" style="width:49.60%"></div><div class="pt c" style="left:49.60%"></div></div>
+            <div class="rval c">49.6%</div><div class="rnote">27.1%</div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">sma</div>
+            <div class="track"><div class="stem" style="width:47.91%"></div><div class="pt c" style="left:47.91%"></div></div>
+            <div class="rval c">47.9%</div><div class="rnote">33.6%</div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">rf</div>
+            <div class="track"><div class="stem" style="width:12.78%"></div><div class="pt c" style="left:12.78%"></div></div>
+            <div class="rval c">12.8%</div><div class="rnote">1.1%</div>
+          </div>
+          <div class="prow body">
+            <div class="rlabel">svm</div>
+            <div class="track"><div class="stem" style="width:4.53%"></div><div class="pt c" style="left:4.53%"></div></div>
+            <div class="rval c">4.5%</div><div class="rnote">0.0%</div>
+          </div>
+        </div>
+        <div class="prow" style="grid-template-columns:112px minmax(190px,1fr) 62px 96px">
+          <div></div>
+          <div class="axis">
+            <span class="tick" style="left:0%">0%</span>
+            <span class="tick" style="left:20%">20%</span>
+            <span class="tick" style="left:40%">40%</span>
+            <span class="tick" style="left:60%">60%</span>
+            <span class="tick" style="left:80%">80%</span>
+            <span class="tick" style="left:100%">100%</span>
+          </div>
+          <div></div><div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>The regression model says buy on 84.7% of calls. The SVM says buy on 0.0%.</b> Averaging these with fixed 0.2 weights does not reduce error — it manufactures a consensus near 50% out of estimators that share no scale. Across the latest full cycle the ensemble had mean 50.1% and σ 10.7 across 836 assets, and the top-ranked pick sat exactly +2.0σ out. A pure-noise ensemble would produce the same “top asset at 70%” reading every single cycle.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="sechead"><span class="idx">04</span><h2>Scorecard</h2></div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Subsystem</th><th></th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="sys">Code structure &amp; craft</td>
+          <td class="gr"><span class="grade g-b">B−</span></td>
+          <td class="ev">Clean module seams, dataclasses, async, config-driven, model persistence. Undermined by a 2,343-line dashboard that holds SQL, currency logic and rendering in one class, and by two divergent bet-close paths.</td>
+        </tr>
+        <tr>
+          <td class="sys">Data pipeline</td>
+          <td class="gr"><span class="grade g-d">D+</span></td>
+          <td class="ev"><span class="mn">interval = '1d'</span> is hardcoded, yet 245,275 rows are stored labelled <span class="mn">'30min'</span> and the docs promise 30-minute bars. History starts June 2025 — one regime, ~284 bars per asset. The crypto universe is <b>1 asset</b> against a spec of 50.</td>
+        </tr>
+        <tr>
+          <td class="sys">Probability estimation</td>
+          <td class="gr"><span class="grade g-f">F</span></td>
+          <td class="ev">Label ≠ bet. No calibration anywhere. <span class="mn">train_test_split(random_state=42)</span> shuffles time-series rows with overlapping 5-bar label windows — leakage in RF, SVM and regression. <span class="mn">class_weight='balanced'</span> destroys the base rate. The LSTM's <span class="mn">MinMaxScaler</span> is fit on five mega-cap US stocks then applied to HK$, ¥ and FX price levels.</td>
+        </tr>
+        <tr>
+          <td class="sys">Ensemble &amp; weighting</td>
+          <td class="gr"><span class="grade g-f">F</span></td>
+          <td class="ev">Linear average of incompatible scales. <span class="mn">update_algorithm_performance()</span> is a stub marked <i>“For now, this is a placeholder”</i> and is never called — weights have been frozen at 0.2 since 4 Sep 2025, <span class="mn">algorithm_performance</span> holds 0 rows, and <span class="mn">svm</span> has no weight row at all.</td>
+        </tr>
+        <tr>
+          <td class="sys">Bet &amp; barrier design</td>
+          <td class="gr"><span class="grade g-d">D−</span></td>
+          <td class="ev">Fixed ±5%/−3% applied to everything from RIVN to EURGBP. One forex bet has been open since 21 Nov 2025 — 4.6 months of dead capital on barriers it will never reach. No time barrier exists.</td>
+        </tr>
+        <tr>
+          <td class="sys">Kelly sizing</td>
+          <td class="gr"><span class="grade g-d">D</span></td>
+          <td class="ev">Uses the lose-the-whole-stake formula <span class="mn">f=(bp−q)/b</span> for a bet that risks 3%. Correct form for capped loss is <span class="mn">f*=p/l−q/w</span>. In practice it doesn't matter: 48% of bets land on the 10% cap, the observed range is 2.9–9.98%, median 8.78%. It is a fixed-fraction sizer with a Kelly derivation printed on top. Fees are absent from the EV calculation.</td>
+        </tr>
+        <tr>
+          <td class="sys">Execution &amp; exit fidelity</td>
+          <td class="gr"><span class="grade g-f">F</span></td>
+          <td class="ev">A −3% stop realized <b>−6.97% on average and −18.20% at worst</b>; +5% targets realized +8.97%. Barriers are checked against daily closes, only while the process happens to be running. Five bets opened 11 Mar were all closed 9 Apr <b>within one second of each other</b> — a month with no monitoring at all.</td>
+        </tr>
+        <tr>
+          <td class="sys">Risk management</td>
+          <td class="gr"><span class="grade g-f">F</span></td>
+          <td class="ev">608 lines that never execute. <span class="mn">trading_system.py:60</span> calls <span class="mn">can_continue_trading()</span> with no argument, so it returns on the <span class="mn">portfolio_summary is None</span> shortcut and <span class="mn">assess_risk()</span> is unreachable. Drawdown, loss streaks and exposure are never evaluated — <span class="mn">risk_events</span> and <span class="mn">risk_metrics_history</span> hold 0 rows each.</td>
+        </tr>
+        <tr>
+          <td class="sys">Accounting integrity</td>
+          <td class="gr"><span class="grade g-c">C−</span></td>
+          <td class="ev">Cash ledger reconciles exactly. But reported equity is <b>$11,001.32 (+10.0%) against an actual $10,112.82 (+1.1%)</b> — <span class="mn">close_bet()</span> never removes the bet from the in-memory <span class="mn">active_bets</span> dict, so closed positions are still counted as assets. <span class="mn">asset_type</span> is hardcoded <span class="mn">'stock'</span> for all 87 bets. 11.8% of prediction rows are stored as raw <span class="mn">float32</span> BLOBs.</td>
+        </tr>
+        <tr>
+          <td class="sys">Verification</td>
+          <td class="gr"><span class="grade g-d">D−</span></td>
+          <td class="ev">289 lines of tests, all of them on the Kelly calculator's arithmetic — the one component whose formula is the wrong one. <span class="mn">scripts/backtest.py</span> is documented in CLAUDE.md and does not exist. There is no way to evaluate a strategy change except to trade it live for a month.</td>
+        </tr>
+        <tr>
+          <td class="sys">Dashboard &amp; UX</td>
+          <td class="gr"><span class="grade g-c">C</span></td>
+          <td class="ev">It works and it is genuinely useful. No <span class="mn">st.cache_data</span> anywhere, <span class="mn">CurrencyConverter</span> is constructed and re-seeded in six separate places, raw <span class="mn">sqlite3.connect</span> in the view layer — and it presents an uncalibrated score as “Probability” with no break-even reference anywhere on screen.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="overall">
+      <div class="g">D+</div>
+      <div class="t">A competently engineered system built on an uncalibrated input, sized by the wrong Kelly formula, exited by a monitor that isn't running, and guarded by a risk manager that never fires. The scaffolding is worth keeping. The premise needs rebuilding.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="idx">05</span><h2>How the loss actually accumulates</h2></div>
+  <div class="col">
+    <p>The stages below are the real pipeline, in order. Each one degrades the signal, and by the end there is nothing left to bet on.</p>
+  </div>
+  <div class="chain">
+    <div class="stage">
+      <div class="rail"><i>1</i></div>
+      <div>
+        <h3>The label</h3>
+        <div class="want"><span class="tag">Should</span><div>Predict which barrier is touched first, within a bounded holding period.</div></div>
+        <div class="got"><span class="tag">Does</span><div>Predicts a 5-bar terminal return crossing +3%. Path-independent, stop-free, and 5 bars against an 18.8-day average hold. The model is answering a question nobody bets on.</div></div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="rail"><i>2</i></div>
+      <div>
+        <h3>The estimator</h3>
+        <div class="want"><span class="tag">Should</span><div>Emit a probability whose value matches observed frequency out of sample.</div></div>
+        <div class="got"><span class="tag">Does</span><div>Emits hand-weighted scores (SMA, RSI), saturated sigmoid squashes (regression at 78.1% mean), or <span class="mn">predict_proba</span> from a class-rebalanced model trained on randomly shuffled overlapping windows. Nothing is ever compared against outcomes.</div></div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="rail"><i>3</i></div>
+      <div>
+        <h3>The ensemble</h3>
+        <div class="want"><span class="tag">Should</span><div>Combine estimators by demonstrated out-of-sample skill.</div></div>
+        <div class="got"><span class="tag">Does</span><div>Averages 4.5% and 78.1% with frozen equal weights into a number centred on 50.1% with σ 10.7. The adaptive-weighting machinery is a stub that has never run.</div></div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="rail"><i>4</i></div>
+      <div>
+        <h3>The selection</h3>
+        <div class="want"><span class="tag">Should</span><div>Bet only where the estimate clears break-even with margin.</div></div>
+        <div class="got"><span class="tag">Does</span><div>Takes the argmax of 860 noisy scores every cycle — the pick with the largest positive noise, not the largest edge. 195 of 836 assets clear the 60% gate on a normal cycle, so the gate filters nothing.</div></div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="rail"><i>5</i></div>
+      <div>
+        <h3>The sizing</h3>
+        <div class="want"><span class="tag">Should</span><div>Scale with edge, shrink to zero as edge vanishes, and price in fees.</div></div>
+        <div class="got"><span class="tag">Does</span><div>Applies a mismatched Kelly form, then a 0.25 multiplier, then a 10% cap that binds on half of all bets — and a <span class="mn">min_bet_amount</span> floor that <b>overrides the cap downward</b>: <span class="mn">max(min_bet, min(kelly, max_bet))</span> bets $100 when Kelly says $20.</div></div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="rail"><i>6</i></div>
+      <div>
+        <h3>The execution</h3>
+        <div class="want"><span class="tag">Should</span><div>Exit at the barrier, so the designed 1.667 payoff ratio is the realized one.</div></div>
+        <div class="got"><span class="tag">Does</span><div>Polls daily closes when the process happens to be alive. Realized payoff ratio 1.287. <b>This alone moves break-even from 37.5% to 43.7% — 6.2 points of required win rate, which is more than the strategy's entire measured edge.</b></div></div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="rail"><i>7</i></div>
+      <div>
+        <h3>The feedback</h3>
+        <div class="want"><span class="tag">Should</span><div>Compare every prediction to its outcome and correct the estimator.</div></div>
+        <div class="got"><span class="tag">Does</span><div>Nothing. <span class="mn">algorithm_performance</span>: 0 rows. Meanwhile the README already prints “44.4% current win rate” as a feature, one line away from the break-even number that would have exposed the problem six months ago.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="idx">06</span><h2>Concrete defects</h2></div>
+  <div class="defects">
+    <div class="defect">
+      <div class="top"><span class="sev crit">Critical</span><span class="ttl">Risk manager is unreachable</span><span class="loc">src/core/trading_system.py:60</span></div>
+      <div class="txt"><code>await self.risk_manager.can_continue_trading()</code> passes no portfolio summary, so the method returns early on its <code>None</code> shortcut. Drawdown limits, loss-streak pauses, exposure caps and emergency stop have never once been evaluated. <b>One-argument fix; then write a test that forces a 25% drawdown and asserts the halt.</b></div>
+    </div>
+    <div class="defect">
+      <div class="top"><span class="sev crit">Critical</span><span class="ttl">Barrier exits run on daily closes, only while the process is up</span><span class="loc">src/data/market_data.py:291 · trading_system.py:_monitor_existing_bets</span></div>
+      <div class="txt">Stops designed at −3% realized −6.97% mean and −18.20% worst. <code>get_stock_data(symbol, days=1)</code> against <code>interval='1d'</code> cannot see an intraday touch, and a month-long gap in March–April closed five positions in the same second. <b>This is the single largest quantified loss in the system.</b></div>
+    </div>
+    <div class="defect">
+      <div class="top"><span class="sev crit">Critical</span><span class="ttl">Cross-asset scaler poisoning in the LSTM</span><span class="loc">src/prediction/algorithms/lstm_algorithm.py · predictor.py:_auto_train_models</span></div>
+      <div class="txt">Training data is <code>pd.concat</code> of AAPL, MSFT, GOOGL, NVDA, TSLA with <code>ignore_index=True</code> — which also fabricates five price discontinuities at the seams. The <code>MinMaxScaler</code> is fit on those dollar levels, then <code>transform</code> is applied to ¥4,899 and HK$ prices. Inputs land far outside [0,1] and outputs saturate: <strong>17.1% of all LSTM calls are pinned exactly at the hardcoded 90% clamp</strong> — one prediction in six maxed out — with 75.5% above 50% and only 0.2% at the lower bound. A calibrated estimator of a 37%-base-rate event does not look like that.</div>
+    </div>
+    <div class="defect">
+      <div class="top"><span class="sev high">High</span><span class="ttl">Look-ahead leakage in every supervised model</span><span class="loc">random_forest_algorithm.py:97 · svm_algorithm.py:110 · regression_algorithm.py:124</span></div>
+      <div class="txt"><code>train_test_split(..., random_state=42)</code> shuffles by default. Adjacent bars share indicator windows <i>and</i> overlapping 5-bar label windows, so the reported test accuracy is meaningless. Needs purged, embargoed walk-forward splits.</div>
+    </div>
+    <div class="defect">
+      <div class="top"><span class="sev high">High</span><span class="ttl">Reported equity overstates the account by ~$888</span><span class="loc">src/portfolio/manager.py:close_bet · get_portfolio_summary:448</span></div>
+      <div class="txt">There are two close paths. <code>_close_bet()</code> removes the position from <code>self.active_bets</code>; <code>close_bet()</code> — the one the monitoring loop actually calls — does not, and also never updates <code>self.cash_balance</code>. <code>total_capital</code> therefore counts settled positions twice. <b>Reported +10.0%; actual +1.1%.</b> Positions are also never marked to market — <code>current_price</code> equals <code>entry_price</code> for every live bet, so unrealized P&amp;L is permanently 0.</div>
+    </div>
+    <div class="defect">
+      <div class="top"><span class="sev high">High</span><span class="ttl">Currency conversion lives in the view layer only</span><span class="loc">src/utils/currency_converter.py · used only in dashboard.py and bet_monitor.py</span></div>
+      <div class="txt">The trading core compares raw local-currency prices to USD-denominated barriers. Bet <code>ad1c7a3f</code> on 8053.T recorded entry $31.67 against a current price of ¥4,899 — a factor of 155 — and had to be cancelled and refunded by hand. Seventeen non-USD bets also carry unhedged FX exposure that is nowhere in the P&amp;L.</div>
+    </div>
+    <div class="defect">
+      <div class="top"><span class="sev high">High</span><span class="ttl">No backtester exists</span><span class="loc">CLAUDE.md documents scripts/backtest.py</span></div>
+      <div class="txt">Every change above is unverifiable without one. This is why six months produced 87 observations instead of the tens of thousands the same code could generate offline in minutes.</div>
+    </div>
+    <div class="defect">
+      <div class="top"><span class="sev med">Medium</span><span class="ttl">float32 predictions written as SQLite BLOBs</span><span class="loc">predictor.py:_store_predictions</span></div>
+      <div class="txt">82,429 of 698,233 rows (11.8%) are raw numpy scalars, not REALs. Any aggregate over them silently returns garbage — <code>AVG(probability)</code> for the LSTM reports 6035.52. Cast with <code>float(...)</code> before insert and backfill the column.</div>
+    </div>
+    <div class="defect">
+      <div class="top"><span class="sev med">Medium</span><span class="ttl">Documentation contradicts itself on fees and sizing</span><span class="loc">CLAUDE.md · README.md:51,308 · config.yaml</span></div>
+      <div class="txt">Three different fee figures: CLAUDE.md says total 0.05% (0.25% × 2 — off by 10×), README says 0.5% per side, config says 0.25%. README claims sizing lands near 2% of capital; the median is 8.78%. <code>asset_type</code> is a hardcoded <code>'stock'</code> TODO, so every asset-class breakdown in the UI is wrong.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="idx">07</span><h2>The redesign</h2></div>
+  <div class="col">
+    <p>Nothing below requires abandoning the codebase. The module boundaries are sound; what has to change is what flows through them. Ordered by expected effect on P&amp;L.</p>
+  </div>
+
+  <div class="fixes">
+
+    <div class="fix">
+      <div class="fh"><span class="fn">A</span><h3>Build the backtester first, and make it the gate</h3></div>
+      <p>An event-driven bar-by-bar simulator that replays the <em>actual</em> bet: entry with fees, both barriers, the time barrier, intraday high/low for touch detection, and the same code path the live system uses. Run it walk-forward across the whole universe.</p>
+      <p>This turns 87 live observations into hundreds of thousands of simulated ones, and turns every question below from an argument into a measurement. Nothing else on this list should be attempted before it exists.</p>
+      <div class="effect">Prerequisite for verifying everything else</div>
+    </div>
+
+    <div class="fix">
+      <div class="fh"><span class="fn">B</span><h3>Replace the six scores with one calibrated first-touch model</h3></div>
+      <p>Label the data the way the bet actually resolves — the triple-barrier method. For every historical bar, walk forward through intraday highs and lows and record which came first: <strong>WIN</strong> (upper touched), <strong>LOSS</strong> (lower touched), or <strong>EXPIRED</strong> (neither, within the max hold). Three classes, and the third one matters: it is the outcome the current design pretends can't happen.</p>
+      <ul>
+        <li>Use <strong>stationary features only</strong> — returns, volatility ratios, cross-sectional z-scores, distance-to-MA in σ units. No raw price or SMA levels; those are what break generalization across assets and currencies.</li>
+        <li>Train <strong>one</strong> model on the pooled cross-section with <strong>purged, embargoed walk-forward CV</strong> — overlapping label windows must be purged from the training fold or the score is fiction.</li>
+        <li>Fit <strong>isotonic calibration</strong> on held-out folds and ship a reliability curve as the release gate. If predicted 60% doesn't deliver 60% ± a few points out of sample, the model does not go live.</li>
+        <li>Drop <code>class_weight='balanced'</code>, or calibrate after it — it is currently inflating <code>predict_proba</code> away from the true base rate.</li>
+        <li>Keep SMA, RSI, MACD and the rest — <strong>as features into that one model</strong>, not as six voters averaging incompatible scales.</li>
+      </ul>
+      <div class="effect">Makes every threshold in the system mean something for the first time</div>
+    </div>
+
+    <div class="fix">
+      <div class="fh"><span class="fn">C</span><h3>Guarantee the exit at the venue, not in your loop</h3></div>
+      <p>The payoff ratio is the strategy. Right now uptime determines it. Two options, in order of preference:</p>
+      <ul>
+        <li><strong>Bracket orders.</strong> On entry, submit an OCO pair (take-profit + stop) to the broker. The exit is then enforced by the exchange whether your laptop is on or not. This is the real fix.</li>
+        <li><strong>A persistent monitor</strong> on intraday bars as a fallback — a separate always-on process, not a step inside the 30-minute trading cycle.</li>
+      </ul>
+      <p>Either way: record <strong>realized slippage per exit</strong> (barrier price vs. fill) as a first-class metric, and feed the measured distribution back into the backtest so simulated payoffs match live ones.</p>
+      <div class="effect">Recovers ~6.2 points of required win rate — more than the strategy's entire current edge</div>
+    </div>
+
+    <div class="fix">
+      <div class="fh"><span class="fn">D</span><h3>Scale the barriers to each asset's own volatility</h3></div>
+      <p>Set the barriers in units of the asset's realized volatility over the intended hold — win at <code>+k·σ_h</code>, loss at <code>−m·σ_h</code> — instead of a flat ±5%/−3% for everything from a meme stock to EURGBP. Keeping <code>k/m</code> fixed keeps the payoff ratio and the expected time-to-touch comparable across the universe, which is what makes a single pooled model legitimate in the first place.</p>
+      <p>Add a hard <strong>time barrier</strong> (e.g. 15 trading days) that force-closes at market. No bet should be able to sit open for 4.6 months.</p>
+      <div class="effect">Fixes dead capital and makes one model valid across 860 assets</div>
+    </div>
+
+    <div class="fix">
+      <div class="fh"><span class="fn">E</span><h3>Stop betting the argmax of 860 noisy scores</h3></div>
+      <p>The maximum of many noisy estimates is dominated by estimation error, not edge — the winner's curse, and it is measurable here: the top pick sits a reliable +2σ above the cross-section every cycle regardless of information.</p>
+      <ul>
+        <li><strong>Shrink</strong> each score toward the cross-sectional mean in proportion to its unreliability (empirical Bayes), then threshold the shrunk value.</li>
+        <li><strong>Require persistence</strong> — the asset must clear the threshold on two consecutive cycles, which filters single-cycle noise spikes cheaply.</li>
+        <li><strong>Spread across the top-k</strong> rather than concentrating on the single top pick, where the curse is worst.</li>
+        <li>Set the gate against <em>calibrated break-even plus a margin</em>, computed from current fees and measured slippage — not a hand-set 60.</li>
+      </ul>
+      <div class="effect">The 66%+ band already returns +2.35% on turnover vs. +0.52% overall</div>
+    </div>
+
+    <div class="fix">
+      <div class="fh"><span class="fn">F</span><h3>Fix the Kelly form, then let it actually bind</h3></div>
+      <p>For a bet that risks a capped fraction of the position, the growth-optimal fraction is <code>f* = p/l − q/w</code>, not <code>(bp−q)/b</code>. Fold fees in first: <code>w_net = w − 2c</code>, <code>l_net = l + 2c</code>. At 0.25% per side that moves break-even from 37.5% to 43.75% before any slippage — a 6-point effect currently missing from the EV calculation entirely.</p>
+      <ul>
+        <li>Note that the corrected formula is <em>unbounded</em> for capped-loss bets — at p = 0.6 it recommends 12× capital. The fractional multiplier and position cap stop being cosmetic and become the actual risk control, so justify them explicitly rather than letting <code>max_bet_fraction</code> silently do all the work.</li>
+        <li>Make <code>min_bet_amount</code> a <strong>don't-bet threshold</strong>, not a floor that overrides the cap upward.</li>
+        <li>Divide by concurrent slots and apply a correlation haircut — 30 simultaneous long equity bets are close to one leveraged index bet.</li>
+      </ul>
+      <div class="effect">Turns sizing from decorative into a real function of edge</div>
+    </div>
+
+    <div class="fix">
+      <div class="fh"><span class="fn">G</span><h3>One source of truth for money</h3></div>
+      <p>Delete <code>self.active_bets</code> as an authority. Derive open positions, exposure and equity from the database on every read — a SQL view over <code>bets</code> and <code>cash_transactions</code> — so there is exactly one definition of "what do I own". Mark positions to market on every cycle so unrealized P&amp;L is real. Move currency conversion <strong>down into the data layer</strong> so every consumer, including the trading core, sees USD. Derive <code>asset_type</code> from the symbol. Cast floats before insert.</p>
+      <p>Then reconcile: a startup check that asserts <code>cash + Σ(marked positions) == Σ(cash_transactions)</code> and refuses to trade if it doesn't.</p>
+      <div class="effect">The headline number stops being wrong by 9×</div>
+    </div>
+
+    <div class="fix">
+      <div class="fh"><span class="fn">H</span><h3>Make the dashboard show the truth, not the score</h3></div>
+      <p>The UI is the most fixable part of this and currently the most misleading, because it renders an uncalibrated score in a column labelled "Probability" with nothing to compare it against.</p>
+      <ul>
+        <li><strong>Draw the break-even line on the same axis as the probability.</strong> One horizontal rule at the fee- and slippage-adjusted break-even, so a 62% reading can never again be mistaken for an edge. This is the highest-value pixel on the page.</li>
+        <li><strong>A permanent reliability panel</strong> — predicted band vs. delivered win rate, exactly the chart above, computed live from <code>bets</code>. It should be impossible to run this system for six months without seeing that gap.</li>
+        <li><strong>Show probability with an interval</strong>, not three decimal places. Three decimals on a number this uncertain is false precision, and it is doing real persuasive work.</li>
+        <li><strong>A slippage column</strong> on closed bets: designed exit vs. actual fill, in basis points. Make the −18% stop visible the day it happens.</li>
+        <li>Replace <em>Market Opportunities</em> ranked by raw score with a ranking by <strong>expected value after fees</strong>, and show assets below break-even greyed rather than hidden — seeing 800 rejected assets builds the right intuition.</li>
+        <li>Structurally: extract a repository module for all SQL, build the <code>CurrencyConverter</code> once behind <code>st.cache_resource</code>, wrap query functions in <code>st.cache_data</code>, and split the 2,343-line class into per-tab render modules.</li>
+      </ul>
+      <div class="effect">Turns the dashboard from a confidence amplifier into an instrument</div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="idx">08</span><h2>What to do this week</h2></div>
+  <div class="plan">
+    <div class="step"><span class="o">1</span><span class="w">Pass the portfolio summary to <code>can_continue_trading()</code><small>One argument. Restores 608 lines of risk control that has never run.</small></span><span class="c">Minutes</span></div>
+    <div class="step"><span class="o">2</span><span class="w">Fix the equity calculation and add a startup reconciliation assert<small>You are currently reading +10% where the account is +1.1%. Nothing can be judged until this is right.</small></span><span class="c">Hours</span></div>
+    <div class="step"><span class="o">3</span><span class="w">Add a time barrier and force-close the 4.6-month forex position<small>Stops the bleed of dead capital while the rest is rebuilt.</small></span><span class="c">Hours</span></div>
+    <div class="step"><span class="o">4</span><span class="w">Move currency conversion into the data layer<small>Removes the class of bug that produced the ¥4,899-vs-$31.67 position.</small></span><span class="c">A day</span></div>
+    <div class="step"><span class="o">5</span><span class="w">Raise <code>min_probability</code> to the top band and stop trading the 50–58% range<small>Crude, but the bottom band cost $210.58 across 22 bets. Buys time honestly.</small></span><span class="c">Minutes</span></div>
+    <div class="step"><span class="o">6</span><span class="w">Write the backtester<small>Then re-derive every threshold from it instead of from intuition.</small></span><span class="c">A week</span></div>
+    <div class="step"><span class="o">7</span><span class="w">Rebuild the label as triple-barrier and train one calibrated model<small>The real work. Gate it on a reliability curve, not on accuracy.</small></span><span class="c">Weeks</span></div>
+    <div class="step"><span class="o">8</span><span class="w">Move exits to broker bracket orders<small>Recovers the payoff ratio the strategy was designed around.</small></span><span class="c">Weeks</span></div>
+  </div>
+</section>
+
+<div class="foot">
+  <p><b>Basis for these figures.</b> All numbers are computed from <code>data/trading.db</code> as of 9 April 2026: 87 rows in <code>bets</code> (84 closed, 2 alive, 1 cancelled), 173 rows in <code>cash_transactions</code>, 698,233 rows in <code>predictions</code>, 245,275 rows in <code>price_data</code>, 258 rows in <code>portfolio_history</code>. Win rate, payoff ratios, break-even points, band calibration and the counterfactual P&amp;L by band are derived directly from realized <code>realized_pnl</code> and <code>amount</code>; algorithm means are over the 615,804 prediction rows stored as REAL, excluding the 82,429 BLOB rows. The cross-sectional ensemble statistics are from the 2026-04-09T11 scoring cycle (836 assets with four or more usable algorithm outputs).</p>
+  <p><b>On sample size.</b> 84 closed bets is not enough to prove a strategy works, and the +1.24 z-score against the barrier baseline should not be read as a result. It is, however, more than enough to show that the stated probabilities are wrong — z = −3.75 against the claimed 63.7% — and that is the finding that matters. The monotone band ordering is encouraging but not yet significant at this n; the backtester is how it gets tested properly.</p>
+</div>
+
+</div>

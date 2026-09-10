@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDEs
+.idea/
+.vscode/
+
+# --- Trading database ---------------------------------------------------------
+# The SQLite database is state, not source. It is a large binary that changes on
+# every run, so git stores a complete new copy each commit -- it had already grown
+# from 85 MB to 121 MB, past GitHub's 100 MB per-file hard limit.
+#
+# Use the Snapshots panel (Portfolio & Data tab) to back it up instead: snapshots
+# are timestamped, restorable, and live outside version control by design.
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.db.bak-*
+data/snapshots/
+
+# --- Generated analysis output ------------------------------------------------
+# Reproducible from scripts/backtest.py, and large. Keep the conclusions in
+# docs/FINDINGS.md, not the raw rows.
+data/scores_*.csv
+data/backtest_scores.csv
+data/backtest_trades.csv
+
+# Logs
+logs/*.log
+logs/*.output
+nul
+
+# --- Trained models -----------------------------------------------------------
+# Rebuilt by the auto-training path, and invalidated automatically whenever the
+# feature schema or barrier definition changes (see model_signature()). Committing
+# them mostly commits staleness.
+models/**/*.joblib
+models/**/*.h5
+models/**/*.keras
+models/calibration/*.json

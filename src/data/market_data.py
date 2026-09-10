@@ -13,6 +13,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 
+from ..utils.currency_converter import CurrencyConverter, MissingRateError
+
 
 class MarketDataManager:
     def __init__(self, config: Dict):
@@ -22,6 +24,9 @@ class MarketDataManager:
 
         # Cache settings
         self.cache_duration = config['data_sources']['stocks']['cache_duration']
+
+        # One converter for the process. All prices leaving this manager are USD.
+        self.currency_converter = CurrencyConverter()
 
         # Initialize crypto exchange (Binance for comprehensive coverage)
         self.crypto_exchange = ccxt.binance({
@@ -315,11 +320,17 @@ class MarketDataManager:
             self.logger.error(f"Error fetching data for {symbol}: {e}")
             return None
     
-    async def _store_data(self, symbol: str, data: pd.DataFrame):
-        """Store data in database with retry logic"""
+    async def _store_data(self, symbol: str, data: pd.DataFrame,
+                          interval: str = '1d', asset_type: str = 'stock'):
+        """
+        Store data in database with retry logic.
+
+        Prices are stored in the asset's NATIVE currency -- this table is the raw
+        market-data cache. Normalisation to USD happens on read, in get_latest_data.
+        """
         if data.empty:
             return
-        
+
         max_retries = 5
         for attempt in range(max_retries):
             try:
@@ -346,16 +357,18 @@ class MarketDataManager:
                         # Create new asset
                         cursor.execute(
                             'INSERT INTO assets (symbol, asset_type) VALUES (?, ?)',
-                            (symbol, 'stock')
+                            (symbol, asset_type)
                         )
                         asset_id = cursor.lastrowid
-                    
-                    # Store price data
+
+                    # Store price data. The interval must be recorded accurately: rows
+                    # were previously written with the column default of '30min' while
+                    # the fetch has always been daily.
                     for timestamp, row in data.iterrows():
                         cursor.execute('''
                         INSERT OR IGNORE INTO price_data
-                        (asset_id, timestamp, open, high, low, close, volume)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        (asset_id, timestamp, open, high, low, close, volume, interval)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (
                             asset_id,
                             timestamp.isoformat(),
@@ -363,9 +376,10 @@ class MarketDataManager:
                             float(row['High']),
                             float(row['Low']),
                             float(row['Close']),
-                            int(row['Volume']) if pd.notna(row['Volume']) else 0
+                            int(row['Volume']) if pd.notna(row['Volume']) else 0,
+                            interval
                         ))
-                    
+
                     conn.commit()
                     self.logger.debug(f"Stored {len(data)} records for {symbol}")
                     break  # Success, exit retry loop
@@ -383,73 +397,137 @@ class MarketDataManager:
                 else:
                     self.logger.error(f"Failed to store data for {symbol} after {max_retries} attempts: {e}")
     
-    async def get_latest_data(self, assets: List[Dict]) -> Dict[str, pd.DataFrame]:
-        """Get latest data for multiple assets (stocks and crypto)"""
-        self.logger.info(f"Fetching data for {len(assets)} assets")
+    async def _fetch_native(self, assets: List[Dict]) -> Dict[str, pd.DataFrame]:
+        """
+        Fetch OHLCV for a list of assets in their native currency.
 
-        # Separate stocks and crypto
-        stock_assets = [asset for asset in assets if asset['type'] == 'stock']
-        crypto_assets = [asset for asset in assets if asset['type'] == 'crypto']
+        Handles every asset type, not just stocks: commodity ETFs and forex pairs also
+        come from yfinance and were previously dropped on the floor here.
+        """
+        results: Dict[str, pd.DataFrame] = {}
 
-        results = {}
+        crypto_assets = [a for a in assets if a.get('type') == 'crypto']
+        # stock, commodity and forex all resolve through yfinance
+        yf_assets = [a for a in assets if a.get('type') != 'crypto']
 
-        # Process stocks in batches to respect API limits
-        if stock_assets:
-            self.logger.info(f"Processing {len(stock_assets)} stock assets")
-            batch_size = 10
-            for i in range(0, len(stock_assets), batch_size):
-                batch = stock_assets[i:i + batch_size]
-
-                # Process batch concurrently
-                tasks = [
-                    self.get_stock_data(asset['symbol'], days=90)
-                    for asset in batch
-                ]
-
+        async def run_batches(batch_assets, fetcher, batch_size, delay, label):
+            for i in range(0, len(batch_assets), batch_size):
+                batch = batch_assets[i:i + batch_size]
+                tasks = [fetcher(asset['symbol'], days=90) for asset in batch]
                 batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-                # Store results
                 for asset, data in zip(batch, batch_results):
                     if isinstance(data, Exception):
-                        self.logger.error(f"Error fetching stock {asset['symbol']}: {data}")
+                        self.logger.error(f"Error fetching {label} {asset['symbol']}: {data}")
                         results[asset['symbol']] = pd.DataFrame()
                     else:
                         results[asset['symbol']] = data
 
-                # Small delay between batches to be nice to the API
-                if i + batch_size < len(stock_assets):
-                    await asyncio.sleep(1)
+                if i + batch_size < len(batch_assets):
+                    await asyncio.sleep(delay)
 
-        # Process crypto assets
+        if yf_assets:
+            self.logger.info(f"Processing {len(yf_assets)} yfinance assets")
+            await run_batches(yf_assets, self.get_stock_data, 10, 1, "asset")
+
         if crypto_assets:
             self.logger.info(f"Processing {len(crypto_assets)} crypto assets")
-            batch_size = 5  # Smaller batches for crypto to respect rate limits
-            for i in range(0, len(crypto_assets), batch_size):
-                batch = crypto_assets[i:i + batch_size]
+            await run_batches(crypto_assets, self.get_crypto_data, 5, 2, "crypto")
 
-                # Process batch concurrently
-                tasks = [
-                    self.get_crypto_data(asset['symbol'], days=90)
-                    for asset in batch
-                ]
+        return results
 
-                batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+    async def get_latest_data(self, assets: List[Dict]) -> Dict[str, pd.DataFrame]:
+        """
+        Get latest OHLCV for multiple assets, NORMALISED TO USD.
 
-                # Store results
-                for asset, data in zip(batch, batch_results):
-                    if isinstance(data, Exception):
-                        self.logger.error(f"Error fetching crypto {asset['symbol']}: {data}")
-                        results[asset['symbol']] = pd.DataFrame()
-                    else:
-                        results[asset['symbol']] = data
+        Currency conversion belongs here rather than in each consumer. It previously
+        lived only in the dashboard, so the trading core compared raw JPY/HKD/GBP
+        quotes against USD-denominated barriers.
 
-                # Longer delay between crypto batches (stricter rate limits)
-                if i + batch_size < len(crypto_assets):
-                    await asyncio.sleep(2)
+        Assets whose currency has no available rate are dropped rather than returned
+        in an unknown denomination.
+        """
+        self.logger.info(f"Fetching data for {len(assets)} assets")
+
+        native = await self._fetch_native(assets)
+
+        # Build the currency converter from whatever forex pairs came back.
+        forex_data = {sym: df for sym, df in native.items()
+                      if sym.endswith('=X') and not df.empty}
+        self.currency_converter.update_rates(forex_data)
+
+        results: Dict[str, pd.DataFrame] = {}
+        dropped: Dict[str, int] = {}
+
+        for asset in assets:
+            symbol = asset['symbol']
+            data = native.get(symbol)
+            if data is None or data.empty:
+                results[symbol] = pd.DataFrame()
+                continue
+
+            currency = self._currency_for(asset)
+
+            # Forex pairs are already a rate, not a price in a currency.
+            if currency == 'USD' or asset.get('type') == 'forex':
+                results[symbol] = data
+                continue
+
+            try:
+                results[symbol] = self.currency_converter.convert_price_series(data, currency)
+            except MissingRateError as e:
+                dropped[currency] = dropped.get(currency, 0) + 1
+                self.logger.warning(f"Dropping {symbol}: {e}")
+                results[symbol] = pd.DataFrame()
+
+        if dropped:
+            self.logger.warning(f"Dropped assets for missing FX rates: {dropped}")
 
         successful_fetches = len([k for k, v in results.items() if not v.empty])
-        self.logger.info(f"Retrieved data for {successful_fetches}/{len(assets)} assets")
+        self.logger.info(f"Retrieved USD-normalised data for {successful_fetches}/{len(assets)} assets")
         return results
+
+    def _currency_for(self, asset: Dict) -> str:
+        """Quote currency for an asset, from metadata where present."""
+        currency = asset.get('currency')
+        if currency:
+            return currency
+        return self.currency_converter.currency_for_symbol(asset['symbol'])
+
+    async def get_current_prices_usd(self, assets: List[Dict]) -> Dict[str, float]:
+        """
+        Latest close per symbol, in USD, for position monitoring.
+
+        Symbols that cannot be priced in USD are omitted -- the caller must skip them
+        rather than compare a native-currency quote against a USD barrier.
+        """
+        if not assets:
+            return {}
+
+        # Always pull the forex pairs needed to build rates, even if the caller did
+        # not ask for them.
+        needed_currencies = {self._currency_for(a) for a in assets} - {'USD'}
+        fx_symbols = {
+            CurrencyConverter.CURRENCY_PAIRS[c]
+            for c in needed_currencies
+            if c in CurrencyConverter.CURRENCY_PAIRS
+        }
+        requested = {a['symbol'] for a in assets}
+        fx_assets = [{'symbol': s, 'type': 'forex', 'currency': 'USD'}
+                     for s in fx_symbols if s not in requested]
+
+        data = await self.get_latest_data(list(assets) + fx_assets)
+
+        prices: Dict[str, float] = {}
+        for asset in assets:
+            symbol = asset['symbol']
+            df = data.get(symbol)
+            if df is not None and not df.empty:
+                prices[symbol] = float(df['Close'].iloc[-1])
+            else:
+                self.logger.warning(f"No USD price available for {symbol}")
+
+        return prices
 
     async def get_crypto_data(self, symbol: str, days: int = 90, force_refresh: bool = False) -> pd.DataFrame:
         """

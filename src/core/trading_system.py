@@ -6,6 +6,7 @@ Manages the main trading loop for both manual and automated modes.
 import asyncio
 import logging
 import yaml
+from datetime import datetime
 from typing import Dict, List, Optional
 from pathlib import Path
 
@@ -34,7 +35,14 @@ class TradingSystem:
         
         # System state
         self.running = True
-        
+
+        # Asset metadata cache (symbol -> {type, currency}), populated on startup so
+        # the monitoring loop can price positions in USD without re-deriving it.
+        self._asset_meta: Dict[str, Dict[str, str]] = {}
+
+        # Time barrier: force-close positions that reach neither price barrier.
+        self.max_hold_days = self.config.get('trading', {}).get('max_hold_days', 15)
+
     def _load_config(self, config_path: str) -> Dict:
         """Load configuration from YAML file"""
         try:
@@ -56,15 +64,21 @@ class TradingSystem:
         
         try:
             while self.running:
-                # Check risk conditions
-                if not await self.risk_manager.can_continue_trading():
+                # Monitor existing bets FIRST so risk is assessed against fresh
+                # marked-to-market equity, and so exits happen even when risk
+                # controls have halted new entries.
+                await self._monitor_existing_bets()
+
+                # Check risk conditions. The portfolio summary MUST be passed:
+                # can_continue_trading() returns on a shortcut when it is None, which
+                # bypassed drawdown, loss-streak, exposure and minimum-capital checks
+                # entirely -- every risk control in the system was dead code.
+                portfolio_summary = await self.portfolio.get_portfolio_summary()
+                if not await self.risk_manager.can_continue_trading(portfolio_summary):
                     self.logger.warning("Risk manager paused trading")
                     await asyncio.sleep(300)  # Wait 5 minutes before checking again
                     continue
-                
-                # CRITICAL: Monitor existing bets first - check and close positions that hit thresholds
-                await self._monitor_existing_bets()
-                
+
                 # Get asset predictions and rankings
                 predictions = await self._get_predictions()
                 
@@ -96,28 +110,69 @@ class TradingSystem:
         await self.predictor.initialize()
         await self.portfolio.initialize()
         await self.risk_manager.initialize()
-        
+
+        # Cache asset metadata (type and quote currency) for the monitoring loop.
+        try:
+            assets = await self.asset_selector.get_all_assets()
+            self._asset_meta = {
+                asset['symbol']: {
+                    'type': asset.get('type', 'stock'),
+                    'currency': asset.get('currency', 'USD'),
+                }
+                for asset in assets
+            }
+            self.logger.info(f"Cached metadata for {len(self._asset_meta)} assets")
+        except Exception as e:
+            self.logger.error(f"Could not cache asset metadata: {e}")
+
+        # Refuse to trade on books that do not balance -- a sizing decision made
+        # against a wrong equity figure is worse than no decision.
+        recon = await self.portfolio.reconcile()
+        if not recon['balanced']:
+            raise ValueError(
+                f"Refusing to start: portfolio does not reconcile "
+                f"(cash drift ${recon['cash_drift']:.2f}). Investigate before trading."
+            )
+
         self.logger.info("All components initialized successfully")
+
+    def asset_selector_type_for(self, symbol: str) -> str:
+        """Asset class for a symbol, from cached metadata."""
+        meta = self._asset_meta.get(symbol)
+        if meta:
+            return meta['type']
+        return 'forex' if symbol.endswith('=X') else 'stock'
+
+    def asset_currency_for(self, symbol: str) -> str:
+        """Quote currency for a symbol, from cached metadata."""
+        meta = self._asset_meta.get(symbol)
+        if meta:
+            return meta['currency']
+        return self.market_data.currency_converter.currency_for_symbol(symbol)
     
     async def _get_predictions(self) -> List[Dict]:
         """Get predictions for all assets and rank by probability"""
         self.logger.info("Fetching market data and generating predictions...")
         
-        # Get latest market data
+        # Get latest market data. get_latest_data() normalises everything to USD and
+        # drops assets whose currency cannot be converted.
         assets = await self.asset_selector.get_all_assets()
         market_data = await self.market_data.get_latest_data(assets)
-        
-        # Create asset type mapping
+
+        # Create asset metadata mappings
         asset_type_map = {asset['symbol']: asset['type'] for asset in assets}
-        
+        currency_map = {asset['symbol']: asset.get('currency', 'USD') for asset in assets}
+
         # Generate predictions
         predictions = await self.predictor.predict_all(market_data)
-        
-        # Enrich predictions with asset type information
+
+        # Enrich predictions with asset metadata so the portfolio records the real
+        # asset class and original currency rather than defaulting both.
         for prediction in predictions:
             symbol = prediction['symbol']
             prediction['asset_type'] = asset_type_map.get(symbol, 'unknown')
-        
+            prediction['currency'] = currency_map.get(symbol, 'USD')
+
         # Filter and rank by probability
         valid_predictions = [
             p for p in predictions 
@@ -260,13 +315,28 @@ class TradingSystem:
             print(f"\nBest opportunity:")
         
         print(f">>> {best_prediction['symbol']} ({best_asset_type}) - {best_prob:.2f}% probability")
-        
-        # Check thresholds
-        if best_prob < 50.0:
-            self.logger.info("Best probability <50%, no bets placed")
-            print(f"Probability {best_prob:.2f}% < 50% minimum - no bet placed")
+
+        # The hard floor is BREAK-EVEN for this bet's own barriers, not 50%. For a
+        # barrier bet, 50% was never the neutral point: the driftless geometry is
+        # around 40% and the fee-adjusted break-even for a 5%/3% bet is 43.75%.
+        # Comparing against 50% both rejected genuinely favourable bets and, far
+        # worse, made a "60% probability" read as a 10-point edge when it was 16.
+        break_even_pct = best_prediction.get('break_even_pct')
+        if break_even_pct is None:
+            break_even_pct = self.kelly_calc.break_even_probability * 100.0
+
+        if best_prob < break_even_pct:
+            self.logger.info(f"Best probability {best_prob:.2f}% below break-even "
+                             f"{break_even_pct:.2f}%, no bets placed")
+            print(f"Probability {best_prob:.2f}% < break-even {break_even_pct:.2f}% "
+                  f"- no bet placed")
             return
-        
+
+        if not best_prediction.get('is_calibrated', True):
+            self.logger.warning(
+                "Betting on an UNCALIBRATED score. Run scripts/backtest.py then "
+                "scripts/fit_calibration.py before trusting these as probabilities.")
+
         if best_prob >= self.auto_threshold:
             self.logger.info(f"Probability {best_prob:.2f}% >= threshold {self.auto_threshold}%, "
                            f"placing automatic bet")
@@ -282,11 +352,15 @@ class TradingSystem:
         probability = prediction['probability']
         current_price = prediction['current_price']
         
-        # Calculate bet size using Kelly
+        # Calculate bet size using Kelly, on THIS asset's barriers. Passing them
+        # explicitly matters in volatility mode: sizing must price the same bet the
+        # probability was estimated for.
         bet_recommendation = self.kelly_calc.calculate_bet_size(
             probability=probability,
             current_price=current_price,
-            available_capital=await self.portfolio.get_available_capital()
+            available_capital=await self.portfolio.get_available_capital(),
+            win_threshold=prediction.get('win_threshold'),
+            loss_threshold=prediction.get('loss_threshold'),
         )
         
         print(f"\n" + "="*80)
@@ -298,21 +372,38 @@ class TradingSystem:
         print(f"Current Price: ${current_price:.2f}")
         print(f"Available Capital: ${bet_recommendation.available_capital:,.2f}")
         
-        # Probability analysis
+        # Probability analysis, against the break-even that actually applies to this
+        # bet's barriers. 50% is not the neutral point for a barrier bet.
+        break_even_pct = self.kelly_calc.break_even_probability * 100.0
+        calibrated_note = "" if prediction.get('is_calibrated', True) else "  [UNCALIBRATED SCORE]"
         print(f"\nPROBABILITY ANALYSIS:")
-        print(f"  Win Probability (p): {bet_recommendation.win_probability:.1%} ({probability:.2f}%)")
+        print(f"  Win Probability (p): {bet_recommendation.win_probability:.1%} "
+              f"({probability:.2f}%){calibrated_note}")
         print(f"  Loss Probability (q): {bet_recommendation.loss_probability:.1%}")
-        
-        # Threshold information
-        win_threshold_pct = ((prediction.get('win_threshold', current_price) - current_price) / current_price) * 100
-        loss_threshold_pct = ((prediction.get('loss_threshold', current_price) - current_price) / current_price) * 100
+        print(f"  Break-even for these barriers: {break_even_pct:.2f}% "
+              f"(margin {probability - break_even_pct:+.2f} pts)")
+
+        # Threshold information. win_threshold/loss_threshold are PERCENTAGES, scaled
+        # to this asset's own volatility when barrier.mode is "volatility".
+        win_threshold_pct = prediction.get('win_threshold')
+        loss_threshold_pct = prediction.get('loss_threshold')
         print(f"\nTHRESHOLD SETUP:")
-        print(f"  Win Target: +{win_threshold_pct:.1f}% (${prediction.get('win_threshold', current_price):.2f})")
-        print(f"  Loss Stop: {loss_threshold_pct:.1f}% (${prediction.get('loss_threshold', current_price):.2f})")
-        
+        if win_threshold_pct is not None and loss_threshold_pct is not None:
+            win_price = current_price * (1 + win_threshold_pct / 100.0)
+            loss_price = current_price * (1 - loss_threshold_pct / 100.0)
+            print(f"  Win Target: +{win_threshold_pct:.2f}% (${win_price:.2f})")
+            print(f"  Loss Stop: -{loss_threshold_pct:.2f}% (${loss_price:.2f})")
+            if prediction.get('sigma_pct'):
+                print(f"  Barriers scaled to this asset: "
+                      f"sigma_{self.predictor.barrier_policy.horizon_days}d = "
+                      f"{prediction['sigma_pct']:.2f}% "
+                      f"({prediction.get('barrier_mode', 'volatility')} mode)")
+        else:
+            print(f"  (no barrier information on this prediction)")
+
         # Kelly formula breakdown
         print(f"\nKELLY FORMULA CALCULATION:")
-        print(f"  Formula: f = (bp - q) / b")
+        print(f"  Formula: f = p/l - q/w  (capped-loss Kelly, net of fees)")
         print(f"  where:")
         print(f"    b (odds ratio) = {bet_recommendation.kelly_formula_b:.3f} (win/loss ratio)")
         print(f"    p (win probability) = {bet_recommendation.kelly_formula_p:.3f}")
@@ -384,79 +475,60 @@ class TradingSystem:
                 return
                 
             self.logger.info(f"Monitoring {len(alive_bets)} active positions")
-            
-            # Get current prices for all symbols with alive bets
-            symbols_to_check = list(set(bet.symbol for bet in alive_bets))
-            current_prices = {}
-            
-            for symbol in symbols_to_check:
+
+            # Get current prices IN USD for all symbols with alive bets.
+            #
+            # This previously called get_stock_data(symbol, days=1) directly, which
+            # returns the raw quote in the asset's native currency -- so a JPY or HKD
+            # price was compared against USD-denominated barriers. It also requested
+            # a 1-day window from a daily-bar feed, which frequently returned nothing.
+            symbols_to_check = sorted({bet.symbol for bet in alive_bets})
+            monitor_assets = [
+                {
+                    'symbol': symbol,
+                    'type': self.asset_selector_type_for(symbol),
+                    'currency': self.asset_currency_for(symbol),
+                }
+                for symbol in symbols_to_check
+            ]
+
+            current_prices = await self.market_data.get_current_prices_usd(monitor_assets)
+
+            # Reprice open positions so unrealized P&L and reported equity are real.
+            await self.portfolio.mark_to_market(current_prices)
+
+            # Delegate the decision to the shared settlement module, so this path
+            # and the dashboard/CLI path cannot drift apart again.
+            from ..trading.settlement import settle_positions
+
+            settlements = await settle_positions(
+                self.portfolio, current_prices, self.max_hold_days)
+            bets_closed = len(settlements)
+
+            if self.mode == 'manual':
+                for record in settlements:
+                    print()
+                    print("*** POSITION CLOSED ***")
+                    print(f"Symbol: {record['symbol']}  [{record['exit_type']}]")
+                    print(f"Reason: {record['reason']}")
+                    print(f"Entry: ${record['entry_price']:.4f} -> "
+                          f"Exit: ${record['exit_price']:.4f}")
+
+            if bets_closed:
+                # Feed the resolved outcomes back into algorithm weights. This is
+                # the loop that never ran: update_algorithm_performance() was a stub
+                # and weights sat frozen at 0.2 from 2025-09-04 onward.
                 try:
-                    recent_data = await self.market_data.get_stock_data(symbol, days=1)
-                    if not recent_data.empty:
-                        current_prices[symbol] = float(recent_data['Close'].iloc[-1])
-                        self.logger.debug(f"Current price for {symbol}: ${current_prices[symbol]:.2f}")
-                    else:
-                        self.logger.warning(f"No recent data available for {symbol}")
+                    scored = await self.predictor.resolve_bet_outcomes()
+                    if scored:
+                        self.logger.info(f"Fed {scored} resolved bet(s) into algorithm weights")
                 except Exception as e:
-                    self.logger.error(f"Error fetching current price for {symbol}: {e}")
-            
-            # Check each bet against thresholds
-            bets_closed = 0
-            for bet in alive_bets:
-                if bet.symbol not in current_prices:
-                    self.logger.warning(f"Skipping {bet.symbol} - no current price available")
-                    continue
-                
-                current_price = current_prices[bet.symbol]
-                
-                # Calculate current return
-                if bet.bet_type == 'long':
-                    current_return_pct = ((current_price - bet.entry_price) / bet.entry_price) * 100
-                    hit_win_threshold = current_price >= bet.win_price
-                    hit_loss_threshold = current_price <= bet.loss_price
-                else:  # short
-                    current_return_pct = ((bet.entry_price - current_price) / bet.entry_price) * 100
-                    hit_win_threshold = current_price <= bet.win_price
-                    hit_loss_threshold = current_price >= bet.loss_price
-                
-                self.logger.debug(f"Bet {bet.bet_id} ({bet.symbol}): Entry=${bet.entry_price:.2f}, "
-                                f"Current=${current_price:.2f}, Return={current_return_pct:+.2f}%")
-                
-                # Check if we need to close the position
-                should_close = False
-                close_reason = ""
-                
-                if hit_win_threshold:
-                    should_close = True
-                    close_reason = f"WIN THRESHOLD HIT: {current_return_pct:+.2f}% (target: {((bet.win_price/bet.entry_price - 1) * 100):+.2f}%)"
-                elif hit_loss_threshold:
-                    should_close = True
-                    close_reason = f"LOSS THRESHOLD HIT: {current_return_pct:+.2f}% (stop: {((bet.loss_price/bet.entry_price - 1) * 100):+.2f}%)"
-                
-                if should_close:
-                    self.logger.info(f"CLOSING POSITION - {bet.symbol}: {close_reason}")
-                    
-                    try:
-                        # Close the bet
-                        await self.portfolio.close_bet(bet.bet_id, current_price, close_reason)
-                        bets_closed += 1
-                        
-                        # Print notification if in manual mode (user is watching)
-                        if self.mode == 'manual':
-                            print(f"\n*** POSITION CLOSED ***")
-                            print(f"Symbol: {bet.symbol}")
-                            print(f"Reason: {close_reason}")
-                            print(f"Entry: ${bet.entry_price:.2f} -> Exit: ${current_price:.2f}")
-                            print(f"Amount: ${bet.amount:.2f}")
-                        
-                    except Exception as e:
-                        self.logger.error(f"Error closing bet {bet.bet_id}: {e}")
-            
-            if bets_closed > 0:
+                    self.logger.error(f"Error updating algorithm performance: {e}")
+
                 self.logger.info(f"Successfully closed {bets_closed} position(s)")
             else:
                 self.logger.debug("No positions required closing at this time")
-                
+
         except Exception as e:
             self.logger.error(f"Error in bet monitoring: {e}")
     

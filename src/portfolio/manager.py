@@ -189,6 +189,27 @@ class PortfolioManager:
         )
         ''')
         
+        # Additive migrations for columns introduced after the table was first
+        # created. `currency` predates this block and is added the same way.
+        cursor.execute("PRAGMA table_info(bets)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+        for column, ddl in (
+            ('currency', "ALTER TABLE bets ADD COLUMN currency TEXT DEFAULT 'USD'"),
+            # How the position actually left the book: win_barrier, loss_barrier,
+            # time_barrier or manual. Needed to build a reliability curve -- a
+            # time-barrier exit is not evidence about the barrier probability.
+            ('exit_reason', "ALTER TABLE bets ADD COLUMN exit_reason TEXT"),
+            # Signed gap between the barrier price and the actual fill, in percent.
+            # Makes execution quality measurable instead of invisible.
+            ('exit_slippage_pct', "ALTER TABLE bets ADD COLUMN exit_slippage_pct REAL"),
+        ):
+            if column not in existing_columns:
+                try:
+                    cursor.execute(ddl)
+                    self.logger.info(f"Added bets.{column} column")
+                except sqlite3.OperationalError as e:
+                    self.logger.debug(f"Could not add bets.{column}: {e}")
+
         # Create indexes
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_bets_status ON bets(status)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_bets_symbol ON bets(symbol)')
@@ -231,6 +252,26 @@ class PortfolioManager:
         finally:
             conn.close()
     
+    async def _count_alive_bets(self) -> int:
+        """Number of open bets, from the database."""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM bets WHERE status = ?',
+                           (BetStatus.ALIVE.value,))
+            return int(cursor.fetchone()[0])
+        finally:
+            conn.close()
+
+    @staticmethod
+    def _infer_asset_type(symbol: str) -> str:
+        """Fallback asset class from the symbol shape, when metadata is absent."""
+        if symbol.endswith('=X'):
+            return 'forex'
+        if symbol.endswith(('-USD', '/USD', 'USDT')):
+            return 'crypto'
+        return 'stock'
+
     def _row_to_bet(self, row: Dict) -> Bet:
         """Convert database row to Bet object"""
         return Bet(
@@ -276,26 +317,49 @@ class PortfolioManager:
         self.logger.info(f"Placing bet for {symbol} at ${current_price:.2f} USD "
                         f"(original currency: {currency}) with {probability:.1f}% probability")
         
-        # Check if we can place more bets
-        if len(self.active_bets) >= self.max_concurrent_bets:
+        # Check if we can place more bets. Counted from the database, not from the
+        # in-memory cache, which used to drift upward as bets were closed.
+        open_count = await self._count_alive_bets()
+        if open_count >= self.max_concurrent_bets:
             raise ValueError(f"Maximum concurrent bets reached ({self.max_concurrent_bets})")
         
-        # Get bet parameters from config
-        win_threshold = self.config.get('trading', {}).get('win_threshold', 5.0)
-        loss_threshold = self.config.get('trading', {}).get('loss_threshold', 3.0)
-        
+        # Barriers come from the PREDICTION, not from config. In volatility mode they
+        # are scaled to this asset's own realised vol, and sizing must use exactly the
+        # barriers the probability was estimated against -- otherwise Kelly is pricing
+        # a different bet than the model forecast.
+        win_threshold = prediction.get('win_threshold')
+        loss_threshold = prediction.get('loss_threshold')
+
+        if win_threshold is None or loss_threshold is None:
+            from ..trading.barriers import BarrierPolicy
+            policy = BarrierPolicy(self.config)
+            if policy.is_volatility_scaled:
+                raise ValueError(
+                    f"{symbol}: volatility-scaled barriers are configured but the "
+                    f"prediction carries no win/loss thresholds. Refusing to fall "
+                    f"back to fixed barriers, which would size a different bet than "
+                    f"was forecast."
+                )
+            win_threshold = policy.fixed_win_pct
+            loss_threshold = policy.fixed_loss_pct
+
         # Import here to avoid circular import
         from ..kelly.calculator import KellyCalculator
 
         # Get current cash balance from DB
         cash_balance = await self.get_cash_balance()
 
-        # Calculate bet size using Kelly
+        # Calculate bet size using Kelly, on THIS asset's barriers
         kelly_calc = KellyCalculator(self.config)
         recommendation = kelly_calc.calculate_bet_size(
             probability=probability,
             current_price=current_price,
-            available_capital=cash_balance
+            available_capital=cash_balance,
+            win_threshold=win_threshold,
+            loss_threshold=loss_threshold,
+            # Positions already open. Kelly sizes a bet as if it were the only thing
+            # at risk; with a book of correlated longs that over-levers everything.
+            concurrent_positions=open_count + 1,
         )
 
         if not recommendation.is_favorable or recommendation.recommended_amount <= 0:
@@ -320,10 +384,15 @@ class PortfolioManager:
         bet_id = str(uuid.uuid4())
         algorithm_used = algorithms[0]['algorithm'] if algorithms else 'ensemble'
         
+        # Asset class comes from the prediction (AssetSelector supplies it). It was
+        # hardcoded to 'stock', which mislabelled every commodity ETF and forex pair
+        # in the book and broke all per-asset-class reporting.
+        asset_type = prediction.get('asset_type') or self._infer_asset_type(symbol)
+
         bet = Bet(
             bet_id=bet_id,
             symbol=symbol,
-            asset_type='stock',  # TODO: Determine from symbol
+            asset_type=asset_type,
             entry_price=current_price,  # Already in USD
             entry_time=datetime.now(),
             amount=net_bet_amount,
@@ -363,7 +432,10 @@ class PortfolioManager:
         
         self.logger.info(f"Bet placed: {bet_id} - {symbol} ${bet_amount:.2f} "
                         f"(${net_bet_amount:.2f} after ${trading_fee:.2f} fee) "
-                        f"({shares:.2f} shares at ${current_price:.2f})")
+                        f"({shares:.2f} shares at ${current_price:.2f}) "
+                        f"barriers +{win_threshold:.2f}%/-{loss_threshold:.2f}%"
+                        + (f" [{prediction['barrier_mode']}, sigma={prediction['sigma_pct']:.2f}%]"
+                           if prediction.get('sigma_pct') else ""))
         
         return bet_id
     
@@ -443,11 +515,40 @@ class PortfolioManager:
         return await self.get_cash_balance()
 
     async def get_portfolio_summary(self) -> PortfolioSnapshot:
-        """Get current portfolio summary"""
-        # Calculate totals
-        active_bets_value = sum(bet.current_value for bet in self.active_bets.values())
-        total_invested = sum(bet.amount for bet in self.active_bets.values())
-        unrealized_pnl = sum(bet.unrealized_pnl for bet in self.active_bets.values())
+        """
+        Get current portfolio summary.
+
+        Open positions are read from the DATABASE, not from the in-memory
+        active_bets dict. The dict is a cache that two divergent close paths kept out
+        of sync, which inflated reported equity by the full value of every settled
+        position. The database is the single source of truth.
+
+        Positions are valued at their last known price (`current_price`), which
+        mark_to_market() refreshes. Where no price has been seen yet this falls back
+        to entry price, i.e. cost.
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute('''
+            SELECT amount, shares, entry_price, current_price
+            FROM bets WHERE status = ?
+            ''', (BetStatus.ALIVE.value,))
+            rows = cursor.fetchall()
+        finally:
+            conn.close()
+
+        active_bets_count = len(rows)
+        total_invested = 0.0
+        active_bets_value = 0.0
+
+        for amount, shares, entry_price, current_price in rows:
+            price = current_price if current_price else entry_price
+            total_invested += float(amount)
+            active_bets_value += float(shares) * float(price)
+
+        unrealized_pnl = active_bets_value - total_invested
 
         # Get realized P&L from database
         realized_pnl = await self._get_total_realized_pnl()
@@ -460,12 +561,143 @@ class PortfolioManager:
             timestamp=datetime.now(),
             total_capital=total_capital,
             cash_balance=cash_balance,
-            active_bets_count=len(self.active_bets),
+            active_bets_count=active_bets_count,
             active_bets_value=active_bets_value,
             total_invested=total_invested,
             unrealized_pnl=unrealized_pnl,
             realized_pnl=realized_pnl
         )
+
+    async def mark_to_market(self, prices: Dict[str, float]) -> int:
+        """
+        Refresh `current_price` on every open bet from a USD price map.
+
+        Without this, current_price stays equal to entry_price for a position's whole
+        life, so unrealized P&L is permanently zero and reported equity values open
+        positions at cost.
+
+        Args:
+            prices: symbol -> latest price in USD
+
+        Returns:
+            Number of positions repriced.
+        """
+        if not prices:
+            return 0
+
+        conn = sqlite3.connect(self.db_path, timeout=60.0)
+        cursor = conn.cursor()
+        updated = 0
+
+        try:
+            cursor.execute('SELECT bet_id, symbol FROM bets WHERE status = ?',
+                           (BetStatus.ALIVE.value,))
+            for bet_id, symbol in cursor.fetchall():
+                price = prices.get(symbol)
+                if price is None:
+                    continue
+                cursor.execute('''
+                UPDATE bets SET current_price = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE bet_id = ?
+                ''', (float(price), bet_id))
+                updated += 1
+
+                # Keep the in-memory cache consistent where it is populated.
+                bet = self.active_bets.get(bet_id)
+                if bet is not None:
+                    bet.current_price = float(price)
+                    bet.current_value = bet.shares * float(price)
+                    bet.unrealized_pnl = bet.current_value - bet.amount
+
+            conn.commit()
+        except Exception as e:
+            self.logger.error(f"Error marking positions to market: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
+        self.logger.info(f"Marked {updated} open position(s) to market")
+        return updated
+
+    async def reconcile(self, raise_on_mismatch: bool = False,
+                        tolerance: float = 0.01) -> Dict:
+        """
+        Check that the books balance before trading.
+
+        Cash must equal the sum of the transaction ledger, and realized P&L must
+        equal proceeds minus cost basis on closed bets. A mismatch means position
+        state and cash state have diverged and no sizing decision can be trusted.
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM cash_transactions')
+            ledger_cash = float(cursor.fetchone()[0])
+
+            cursor.execute('''
+            SELECT COALESCE(SUM(balance_after), 0) FROM cash_transactions
+            WHERE transaction_id = (SELECT MAX(transaction_id) FROM cash_transactions)
+            ''')
+            last_balance_after = float(cursor.fetchone()[0])
+
+            cursor.execute('''
+            SELECT COUNT(*), COALESCE(SUM(realized_pnl), 0) FROM bets
+            WHERE status IN (?, ?)
+            ''', (BetStatus.WON.value, BetStatus.LOST.value))
+            closed_count, realized_pnl = cursor.fetchone()
+
+            cursor.execute('SELECT COUNT(*) FROM bets WHERE status = ?',
+                           (BetStatus.ALIVE.value,))
+            alive_count = cursor.fetchone()[0]
+        finally:
+            conn.close()
+
+        cash_drift = abs(ledger_cash - last_balance_after)
+        memory_drift = abs(alive_count - len(self.active_bets)) if self.active_bets else 0
+
+        result = {
+            'ledger_cash': ledger_cash,
+            'last_balance_after': last_balance_after,
+            'cash_drift': cash_drift,
+            'alive_bets_in_db': alive_count,
+            'alive_bets_in_memory': len(self.active_bets),
+            'memory_drift': memory_drift,
+            'closed_bets': closed_count,
+            'realized_pnl': float(realized_pnl),
+            'balanced': cash_drift <= tolerance,
+        }
+
+        if not result['balanced']:
+            message = (f"Books do not balance: ledger sum ${ledger_cash:.2f} vs "
+                       f"last recorded balance ${last_balance_after:.2f} "
+                       f"(drift ${cash_drift:.2f})")
+            self.logger.error(message)
+            if raise_on_mismatch:
+                raise ValueError(message)
+        else:
+            self.logger.info(f"Reconciliation OK: cash ${ledger_cash:.2f}, "
+                             f"{alive_count} open, {closed_count} closed, "
+                             f"realized ${realized_pnl:+.2f}")
+
+        if memory_drift:
+            self.logger.warning(f"In-memory active_bets out of sync with DB "
+                                f"({len(self.active_bets)} vs {alive_count})")
+
+        return result
+
+    async def get_expired_bets(self, max_hold_days: int) -> List[Bet]:
+        """
+        Open bets that have passed the time barrier and must be force-closed.
+
+        Without a time barrier a position on a low-volatility asset can never reach
+        either price barrier: one forex bet in this book sat open for 4.6 months.
+        """
+        if not max_hold_days or max_hold_days <= 0:
+            return []
+
+        cutoff = datetime.now() - timedelta(days=max_hold_days)
+        return [bet for bet in await self.get_alive_bets() if bet.entry_time <= cutoff]
     
     async def _store_bet(self, bet: Bet):
         """Store bet in database"""
@@ -762,14 +994,34 @@ class PortfolioManager:
             net_exit_value = current_value - exit_fee
             realized_pnl = net_exit_value - amount  # P&L after fees
 
-            # Determine new status based on thresholds first, then P&L
+            # Determine new status based on thresholds first, then P&L.
+            # exit_reason records WHICH barrier resolved the bet: a time-barrier exit
+            # that happens to be profitable is not evidence that the win barrier was
+            # reached, and must not be counted as such when calibrating.
             if current_price >= win_price:
                 new_status = BetStatus.WON
+                exit_reason = 'win_barrier'
+                barrier_price = win_price
             elif current_price <= loss_price:
                 new_status = BetStatus.LOST
+                exit_reason = 'loss_barrier'
+                barrier_price = loss_price
             else:
-                # Between thresholds - use final P&L (after fees) to determine status
+                # Between thresholds - closed early (time barrier or manual).
                 new_status = BetStatus.WON if realized_pnl > 0 else BetStatus.LOST
+                exit_reason = 'time_barrier' if 'TIME' in close_reason.upper() else 'manual'
+                barrier_price = None
+
+            # Slippage: how far past the barrier the fill actually landed. Negative
+            # means the exit was worse than designed. Polling daily closes has
+            # historically overshot a -3% stop to -7% on average.
+            if barrier_price:
+                slippage_pct = ((current_price - barrier_price) / barrier_price) * 100.0
+                if exit_reason == 'loss_barrier':
+                    # For a stop, a lower fill is worse; report worse as negative.
+                    slippage_pct = -abs(slippage_pct) if current_price < barrier_price else abs(slippage_pct)
+            else:
+                slippage_pct = None
 
             # Update the bet in database
             cursor.execute('''
@@ -779,6 +1031,8 @@ class PortfolioManager:
                 exit_time = ?,
                 exit_price = ?,
                 realized_pnl = ?,
+                exit_reason = ?,
+                exit_slippage_pct = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE bet_id = ?
             ''', (
@@ -787,8 +1041,15 @@ class PortfolioManager:
                 datetime.now().isoformat(),
                 current_price,
                 realized_pnl,
+                exit_reason,
+                slippage_pct,
                 bet_id
             ))
+
+            if slippage_pct is not None and abs(slippage_pct) > 1.0:
+                self.logger.warning(
+                    f"{symbol}: exit filled {slippage_pct:+.2f}% past the "
+                    f"{exit_reason} at ${barrier_price:.4f} (fill ${current_price:.4f})")
 
             conn.commit()
 
@@ -809,6 +1070,13 @@ class PortfolioManager:
             bet_id=bet_id,
             transaction_type='bet_close'
         )
+
+        # Drop the settled position from the in-memory cache. Omitting this left
+        # closed bets counted in active_bets_value, so reported total_capital
+        # double-counted every settled position (the account read +10% when it was
+        # +1.1%). It also let the max_concurrent_bets counter drift upward forever.
+        self.active_bets.pop(bet_id, None)
+        self.cash_balance = await self.get_cash_balance()
 
         # Record portfolio snapshot after closing bet
         await self._record_portfolio_snapshot(f"Bet closed: {symbol} - {close_reason}")
