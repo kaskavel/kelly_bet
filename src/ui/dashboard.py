@@ -10,11 +10,14 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
+import sqlite3
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
+# NOTE: streamlit_autorefresh deliberately NOT imported. Timed auto-refresh was
+# re-fetching the whole universe unattended and exhausting the yfinance rate limit;
+# market data is now fetched only on an explicit button press.
 
 try:
     from src.core.trading_system import TradingSystem
@@ -162,6 +165,11 @@ class TradingDashboard:
 
             self.logger.info("Getting available capital...")
             available_capital = await self.portfolio_manager.get_available_capital()
+            # Open positions, for the Kelly correlation haircut.
+            try:
+                open_positions = await self.portfolio_manager._count_alive_bets()
+            except Exception:
+                open_positions = 0
             self.logger.info(f"Available capital: ${available_capital:.2f}")
 
             # Get ALL assets (stocks and crypto)
@@ -327,16 +335,30 @@ class TradingDashboard:
                                 algorithms_dict['svm'] = None
                                 failed_algorithms.append("SVM: Model not available")
 
-                            # Calculate Kelly recommendation using REAL probability
+                            # Calculate Kelly recommendation using REAL probability,
+                            # on THIS asset's barriers and against the open book.
+                            # Omitting the thresholds sized every asset on the config
+                            # defaults, which under volatility-scaled barriers prices
+                            # a different bet than the one being offered.
                             kelly_rec = kelly_calc.calculate_bet_size(
                                 probability=final_probability,
                                 current_price=current_price,
-                                available_capital=available_capital
+                                available_capital=available_capital,
+                                win_threshold=prediction.get('win_threshold'),
+                                loss_threshold=prediction.get('loss_threshold'),
+                                concurrent_positions=open_positions + 1,
                             )
 
                             opportunities.append({
                                 "symbol": symbol,
                                 "asset_type": asset_type,
+                                "raw_score": prediction.get('raw_score', final_probability),
+                                "win_threshold": prediction.get('win_threshold'),
+                                "loss_threshold": prediction.get('loss_threshold'),
+                                "sigma_pct": prediction.get('sigma_pct'),
+                                "break_even_pct": prediction.get('break_even_pct'),
+                                "required_edge_pct": self._required_edge_for(prediction),
+                                "expected_days_to_win": self._expected_days(prediction),
                                 "currency": asset.get('currency', 'USD') if asset else 'USD',  # Track original currency
                                 "current_price": current_price,  # Already in USD after conversion
                                 "final_probability": final_probability,
@@ -375,7 +397,7 @@ class TradingDashboard:
             st.error(f"Error getting opportunities: {e}")
             return []
     
-    async def get_portfolio_data(self) -> Dict:
+    async def get_portfolio_data(self, fetch_prices: bool = True) -> Dict:
         """Get portfolio status data"""
         try:
             if not self.portfolio_manager:
@@ -401,8 +423,11 @@ class TradingDashboard:
             # Refresh portfolio state to ensure in-memory data matches database after any settlements
             await self.portfolio_manager._load_portfolio_state()
 
-            # Update current prices for active bets to get accurate unrealized P&L
-            await self._update_active_bet_prices()
+            # Update current prices for active bets to get accurate unrealized P&L.
+            # This is a network call, so it is skipped on the DB-only path; equity
+            # then reflects the last marked-to-market prices.
+            if fetch_prices:
+                await self._update_active_bet_prices()
 
             portfolio_summary = await self.portfolio_manager.get_portfolio_summary()
             bet_statistics = await self.portfolio_manager.get_bet_statistics()
@@ -428,7 +453,7 @@ class TradingDashboard:
             self.logger.error(f"Portfolio data error: {e}")
             return {}
     
-    async def get_active_bets_data(self) -> List[Dict]:
+    async def get_active_bets_data(self, fetch_prices: bool = True) -> List[Dict]:
         """Get active bets data"""
         try:
             if not self.portfolio_manager:
@@ -441,11 +466,19 @@ class TradingDashboard:
             await self.portfolio_manager.initialize()
             active_bets = await self.portfolio_manager.get_alive_bets()
 
-            # Get current market prices for all active bets (with USD conversion)
+            # Get current market prices for all active bets (with USD conversion).
+            # Skipped entirely when fetch_prices is False: the caller then relies on
+            # the last marked-to-market price stored on each bet, so rendering the
+            # page costs no API quota.
             symbols = list(set(bet.symbol for bet in active_bets))
             current_prices = {}
 
-            if symbols and self.market_data:
+            if not fetch_prices:
+                current_prices = {bet.symbol: bet.current_price for bet in active_bets
+                                  if bet.current_price}
+                self.logger.debug(f"Using {len(current_prices)} stored prices "
+                                  f"(no API calls)")
+            elif symbols and self.market_data:
                 try:
                     await self.market_data.initialize()
 
@@ -522,8 +555,14 @@ class TradingDashboard:
                     "pnl": pnl_dollars,
                     "pnl_pct": pnl_pct,
                     "entry_time": bet.entry_time,
-                    "win_threshold": bet.win_price,
-                    "loss_threshold": bet.loss_price,
+                    # Prices and percentages are kept under distinct keys. These two
+                    # code paths previously both wrote "win_threshold" -- one a price,
+                    # the other a percentage -- and the table formatted both as
+                    # dollars, so an 8.5% barrier rendered as "$8.50".
+                    "win_price": bet.win_price,
+                    "loss_price": bet.loss_price,
+                    "win_pct": bet.win_threshold,
+                    "loss_pct": bet.loss_threshold,
                     "bet_id": bet.bet_id,
                     "asset_type": bet.asset_type,
                     "shares": bet.shares,
@@ -538,7 +577,7 @@ class TradingDashboard:
             self.logger.error(f"Active bets error: {e}")
             return []
 
-    async def get_all_bets_data(self) -> Tuple[List[Dict], List[Dict]]:
+    async def get_all_bets_data(self, fetch_prices: bool = True) -> Tuple[List[Dict], List[Dict]]:
         """Get all bets data split into alive and closed bets"""
         try:
             if not self.portfolio_manager:
@@ -583,8 +622,8 @@ class TradingDashboard:
                         "entry_time": datetime.fromisoformat(row[4]),
                         "amount": float(row[5]),
                         "shares": float(row[6]),
-                        "win_threshold": float(row[7]),
-                        "loss_threshold": float(row[8]),
+                        "win_pct": float(row[7]),
+                        "loss_pct": float(row[8]),
                         "win_price": float(row[9]),
                         "loss_price": float(row[10]),
                         "current_price": float(row[11]) if row[11] else float(row[3]),
@@ -629,9 +668,15 @@ class TradingDashboard:
                     if bet_data["status"] == "alive":
                         alive_symbols.add(bet_data["symbol"])
 
-                # Get current market prices for alive bets (with USD conversion)
+                # Get current market prices for alive bets (with USD conversion).
+                # Skipped when fetch_prices is False so the page can render from the
+                # database without spending API quota.
                 current_prices = {}
-                if alive_symbols and self.market_data:
+                if not fetch_prices:
+                    current_prices = {r["symbol"]: r.get("current_price")
+                                      for r in bet_rows
+                                      if r["status"] == "alive" and r.get("current_price")}
+                elif alive_symbols and self.market_data:
                     try:
                         await self.market_data.initialize()
 
@@ -746,8 +791,17 @@ class TradingDashboard:
             st.error(f"Failed to settle bet: {e}")
             return False
 
-    async def place_bet(self, symbol: str, probability: float, current_price: float, algorithms_dict: dict = None, currency: str = 'USD') -> bool:
-        """Place a bet for the given symbol using real portfolio manager
+    async def place_bet(self, symbol: str, probability: float, current_price: float,
+                        algorithms_dict: dict = None, currency: str = 'USD',
+                        opportunity: Dict = None) -> bool:
+        """
+        Place a bet through the real portfolio manager.
+
+        `opportunity` carries the row the user actually clicked, and passing it is not
+        optional under volatility-scaled barriers: the barriers travel on it, and
+        PortfolioManager.place_bet refuses to fall back to config defaults rather
+        than silently size a different bet than the one on screen. Without it, every
+        placement path raised.
 
         Args:
             symbol: Asset symbol
@@ -755,11 +809,14 @@ class TradingDashboard:
             current_price: Current price in USD (already converted)
             algorithms_dict: Algorithm predictions
             currency: Original currency (for reference, price is already in USD)
+            opportunity: The full opportunity row, source of the barriers
         """
         try:
             if not self.portfolio_manager:
                 st.error("Portfolio manager not available")
                 return False
+
+            opportunity = opportunity or {}
 
             # Create prediction dict for portfolio manager with full algorithm data
             prediction = {
@@ -767,6 +824,13 @@ class TradingDashboard:
                 'probability': probability,
                 'current_price': current_price,  # Already in USD
                 'currency': currency,  # Original currency for reference
+                # This asset's own barriers, so sizing and the stored win/loss prices
+                # match the bet that was displayed and agreed to.
+                'win_threshold': opportunity.get('win_threshold'),
+                'loss_threshold': opportunity.get('loss_threshold'),
+                'barrier_mode': opportunity.get('barrier_mode', 'volatility'),
+                'sigma_pct': opportunity.get('sigma_pct'),
+                'asset_type': opportunity.get('asset_type'),
                 'algorithms': []
             }
 
@@ -821,23 +885,55 @@ class TradingDashboard:
             self.logger.error(f"Bet placement error: {e}")
             return False
 
-    async def check_and_settle_bets(self):
-        """Check active bets and settle any that hit win/loss thresholds"""
+    async def check_and_settle_bets(self, fetch_prices: bool = True) -> List[Dict]:
+        """
+        Check open positions and settle any that qualify.
+
+        Runs on **every** entry into the app and on every refresh, because a position
+        that should have closed distorts equity, the win-rate statistics and the
+        correlation haircut applied to new bets.
+
+        `fetch_prices=False` is the page-load path: it settles using the last stored
+        marks, with no network calls. That still catches **every time-barrier exit** --
+        the time barrier needs no quote at all -- plus any price barrier already
+        visible in the last known marks. Live price barriers need fresh data, which is
+        what the "Refresh prices" button is for.
+        """
         try:
-            if not self.bet_monitor:
-                self.logger.warning("Bet monitor not available for settlement check")
-                return
+            from src.trading.settlement import settle_positions
 
-            self.logger.info("Checking for bet settlements...")
+            if not self.portfolio_manager:
+                self.logger.warning("Portfolio manager not available for settlement")
+                return []
 
-            # Use the bet monitor's settlement logic from livebets CLI
-            await self.bet_monitor._monitor_and_settle_positions()
+            max_hold_days = int(self.config.get('trading', {}).get('max_hold_days', 30))
 
-            self.logger.info("Bet settlement check completed")
+            if fetch_prices and self.bet_monitor:
+                # Full check: the monitor fetches live prices, marks to market, then
+                # settles through the same shared rule.
+                await self.bet_monitor._monitor_and_settle_positions()
+                self.logger.info("Bet settlement check completed (live prices)")
+                return []
+
+            # Offline check: last known marks only.
+            await self.portfolio_manager.initialize()
+            alive = await self.portfolio_manager.get_alive_bets()
+            if not alive:
+                return []
+
+            prices = {bet.symbol: bet.current_price for bet in alive
+                      if bet.current_price}
+            settled = await settle_positions(self.portfolio_manager, prices,
+                                             max_hold_days)
+            if settled:
+                self.logger.info(f"Settled {len(settled)} position(s) from stored "
+                                 f"marks, no API calls")
+            return settled
 
         except Exception as e:
             self.logger.error(f"Error during bet settlement check: {e}")
-            # Don't raise exception - settlement failures shouldn't break dashboard
+            # Don't raise - settlement failures shouldn't break the dashboard
+            return []
 
     async def _update_active_bet_prices(self):
         """Update current prices for active bets to ensure accurate unrealized P&L calculations"""
@@ -936,6 +1032,299 @@ class TradingDashboard:
         except Exception as e:
             self.logger.error(f"Portfolio refresh failed: {e}", exc_info=True)
             st.error(f"Failed to refresh portfolio: {e}")
+
+    @staticmethod
+    def _hurdle_label(rake_pct: Optional[float]) -> Optional[str]:
+        """
+        Plain reading of how hard a bet is to win, from the fee's share of the pot.
+
+        The number itself ("2.40 pts of required edge") is meaningless to most
+        people. What it means is: how much better than luck you have to be. For
+        calibration, professional systematic funds typically run on a couple of
+        points of edge, so 5+ is not a realistic target for anyone.
+        """
+        if rake_pct is None:
+            return None
+        if rake_pct < 1.5:
+            return "Low"
+        if rake_pct < 3.0:
+            return "Moderate"
+        if rake_pct < 5.0:
+            return "High"
+        return "Very high"
+
+    @staticmethod
+    def _opportunity_status(opp: Dict) -> str:
+        """
+        One word on why a row is or is not actionable.
+
+        Most rows are not, and silently showing a Kelly of 0.0% with no reason is
+        unhelpful. The usual causes are an uneconomic barrier (fees eat the target)
+        or a Kelly size below the minimum bet.
+        """
+        if opp.get('is_favorable'):
+            return "Tradeable"
+        if opp.get('tradeable') is False:
+            return "Fees too big"
+        warning = (opp.get('risk_warning') or '').lower()
+        if 'below minimum' in warning:
+            return "Too small"
+        if 'negative expected value' in warning:
+            return "Below break-even"
+        return "No bet"
+
+    def _required_edge_for(self, prediction: Dict) -> Optional[float]:
+        """Points of edge this bet's barriers demand over the geometry: 2c/(w+l)."""
+        win, loss = prediction.get('win_threshold'), prediction.get('loss_threshold')
+        if not win or not loss:
+            return None
+        from src.trading.barriers import BarrierPolicy
+        return BarrierPolicy(self.config).required_edge(win, loss)
+
+    def _expected_days(self, prediction: Dict) -> Optional[float]:
+        """
+        Expected trading days for price to travel to the profit target.
+
+        A barrier d daily-sigmas away is reached in about d^2 bars.
+        """
+        win = prediction.get('win_threshold')
+        sigma = prediction.get('sigma_pct')
+        if not win or not sigma:
+            return None
+        from src.trading.barriers import BarrierPolicy
+        horizon = BarrierPolicy(self.config).horizon_days
+        daily_sigma = sigma / (horizon ** 0.5)
+        return (win / daily_sigma) ** 2 if daily_sigma > 0 else None
+
+    async def load_cached_state(self):
+        """
+        Populate the dashboard from the DATABASE only. No network calls.
+
+        Used on page load and after any rerun, so browsing the dashboard costs no API
+        quota. Prices shown are the last marked-to-market values; the header states
+        how old they are.
+        """
+        try:
+            self.logger.info("Loading cached state from database (no API calls)...")
+
+            # Settle BEFORE reading anything: an overdue position would otherwise
+            # inflate equity, distort the win rate and tighten the correlation
+            # haircut on new bets. Uses stored marks only, so this costs no API quota
+            # and still catches every time-barrier exit.
+            settled = await self.check_and_settle_bets(fetch_prices=False)
+            if settled:
+                st.session_state.settled_on_load = settled
+
+            st.session_state.portfolio_data = await self.get_portfolio_data(
+                fetch_prices=False)
+            st.session_state.active_bets_data = await self.get_active_bets_data(
+                fetch_prices=False)
+            st.session_state.all_bets_data = await self.get_all_bets_data(
+                fetch_prices=False)
+            st.session_state.opportunities_data = await self.get_cached_opportunities()
+            st.session_state.prices_as_of = await self.get_price_data_asof()
+
+            self.logger.info(
+                f"Cached state loaded: {len(st.session_state.opportunities_data)} "
+                f"stored opportunities, prices as of {st.session_state.prices_as_of}")
+
+        except Exception as e:
+            self.logger.error(f"Failed to load cached state: {e}", exc_info=True)
+            st.error(f"Could not load saved data: {e}")
+
+    async def get_price_data_asof(self):
+        """Timestamp of the newest cached price bar, for the staleness indicator."""
+        try:
+            conn = sqlite3.connect(self.portfolio_manager.db_path)
+            try:
+                row = conn.execute(
+                    "SELECT MAX(substr(timestamp,1,10)) FROM price_data").fetchone()
+                return row[0] if row else None
+            finally:
+                conn.close()
+        except Exception as e:
+            self.logger.debug(f"Could not read price data age: {e}")
+            return None
+
+    async def get_cached_opportunities(self) -> List[Dict]:
+        """
+        Rebuild the last computed ranking from the stored `predictions` rows.
+
+        Lets the page show the most recent opportunity list without re-running the
+        models or hitting any API. Barriers and break-even are recomputed locally
+        from cached bars, which is free.
+        """
+        try:
+            conn = sqlite3.connect(self.portfolio_manager.db_path)
+            try:
+                latest = conn.execute(
+                    "SELECT MAX(timestamp) FROM predictions").fetchone()[0]
+                if not latest:
+                    return []
+
+                # Predictions from one scoring cycle share a timestamp prefix.
+                rows = conn.execute("""
+                    SELECT symbol, algorithm, probability
+                    FROM predictions
+                    WHERE substr(timestamp, 1, 13) = substr(?, 1, 13)
+                """, (latest,)).fetchall()
+            finally:
+                conn.close()
+
+            if not rows:
+                return []
+
+            by_symbol: Dict[str, Dict[str, float]] = {}
+            for symbol, algorithm, probability in rows:
+                if probability is None:
+                    continue
+                by_symbol.setdefault(symbol, {})[algorithm] = float(probability)
+
+            # Asset class per symbol, so the table is not mislabelled.
+            conn = sqlite3.connect(self.portfolio_manager.db_path)
+            try:
+                asset_types = dict(conn.execute(
+                    "SELECT symbol, asset_type FROM assets").fetchall())
+            finally:
+                conn.close()
+
+            opportunities = []
+            for symbol, algos in by_symbol.items():
+                if not algos:
+                    continue
+                score = sum(algos.values()) / len(algos)
+                # Must carry the SAME keys as the live refresh path in
+                # get_opportunities_data(), or the renderers KeyError. Kelly fields
+                # are filled in by _annotate_opportunity_economics once the
+                # per-asset barriers are known.
+                opportunities.append({
+                    'symbol': symbol,
+                    'asset_type': asset_types.get(symbol, 'stock'),
+                    'currency': 'USD',
+                    'raw_score': score,
+                    'final_probability': score,
+                    'algorithms': {
+                        'lstm': algos.get('lstm'),
+                        'random_forest': algos.get('rf'),
+                        'sma': algos.get('sma'),
+                        'rsi': algos.get('rsi'),
+                        'regression': algos.get('regression'),
+                        'svm': algos.get('svm'),
+                    },
+                    'n_algorithms': len(algos),
+                    'computed_at': latest,
+                    'prediction_confidence': 0.0,
+                    'failed_algorithms': [a for a in ('lstm', 'rf', 'sma', 'rsi',
+                                                      'regression', 'svm')
+                                          if a not in algos],
+                    # Placeholders; overwritten during annotation.
+                    'current_price': 0.0,
+                    'kelly_fraction': 0.0,
+                    'recommended_amount': 0.0,
+                    'is_favorable': False,
+                    'risk_warning': '',
+                })
+
+            opportunities.sort(key=lambda o: o['raw_score'], reverse=True)
+            top = opportunities[:60]
+            await self._annotate_opportunity_economics(top)
+            return top
+
+        except Exception as e:
+            self.logger.error(f"Could not rebuild cached opportunities: {e}")
+            return []
+
+    async def _annotate_opportunity_economics(self, opportunities: List[Dict]):
+        """
+        Attach the exactly-knowable economics to each opportunity.
+
+        These do NOT depend on the model being calibrated: barrier distances,
+        break-even and required edge follow from the asset's own volatility and the
+        fee, and are computed from cached bars. They are the part of this screen a
+        user can actually act on.
+        """
+        if not opportunities:
+            return
+
+        from src.kelly.calculator import KellyCalculator
+        from src.trading.barriers import BarrierPolicy
+        policy = BarrierPolicy(self.config)
+        kelly = KellyCalculator(self.config)
+
+        # Sizing context: real cash and the real open-position count, so the
+        # correlation haircut is the one that would actually apply.
+        try:
+            available_capital = await self.portfolio_manager.get_cash_balance()
+            open_positions = await self.portfolio_manager._count_alive_bets()
+        except Exception as e:
+            self.logger.debug(f"Could not read sizing context: {e}")
+            available_capital, open_positions = 0.0, 0
+
+        conn = sqlite3.connect(self.portfolio_manager.db_path)
+        try:
+            for opp in opportunities:
+                try:
+                    frame = pd.read_sql_query("""
+                        SELECT p.timestamp, p.open, p.high, p.low, p.close, p.volume
+                        FROM price_data p JOIN assets a ON a.asset_id = p.asset_id
+                        WHERE a.symbol = ?
+                        ORDER BY p.timestamp DESC LIMIT 120
+                    """, conn, params=(opp['symbol'],))
+                    if frame.empty:
+                        continue
+
+                    frame = frame.iloc[::-1].rename(columns={
+                        'open': 'Open', 'high': 'High', 'low': 'Low',
+                        'close': 'Close', 'volume': 'Volume'})
+
+                    opp.setdefault('current_price', float(frame['Close'].iloc[-1]))
+
+                    spec = policy.for_series(frame)
+                    if spec is None:
+                        continue
+
+                    opp['win_threshold'] = spec.win_pct
+                    opp['loss_threshold'] = spec.loss_pct
+                    opp['sigma_pct'] = spec.sigma_pct
+                    opp['break_even_pct'] = policy.break_even(
+                        spec.win_pct, spec.loss_pct) * 100.0
+                    opp['required_edge_pct'] = policy.required_edge(
+                        spec.win_pct, spec.loss_pct)
+                    opp['tradeable'] = policy.is_economic(spec)
+                    opp['reject_reason'] = policy.rejection_reason(spec)
+                    # Expected bars to touch a barrier d sigma_daily away is ~d^2.
+                    if spec.sigma_pct:
+                        daily_sigma = spec.sigma_pct / (policy.horizon_days ** 0.5)
+                        if daily_sigma > 0:
+                            opp['expected_days_to_win'] = (spec.win_pct / daily_sigma) ** 2
+                            opp['expected_days_to_loss'] = (spec.loss_pct / daily_sigma) ** 2
+
+                    # Size on THIS asset's barriers, not on config defaults, and
+                    # against the book that is actually open.
+                    if opp['tradeable'] and available_capital > 0:
+                        recommendation = kelly.calculate_bet_size(
+                            probability=opp['final_probability'],
+                            current_price=opp['current_price'],
+                            available_capital=available_capital,
+                            win_threshold=spec.win_pct,
+                            loss_threshold=spec.loss_pct,
+                            concurrent_positions=open_positions + 1,
+                        )
+                        opp['is_favorable'] = recommendation.is_favorable
+                        opp['kelly_fraction'] = (recommendation.fraction_of_capital
+                                                 if recommendation.is_favorable else 0.0)
+                        opp['recommended_amount'] = (recommendation.recommended_amount
+                                                     if recommendation.is_favorable else 0.0)
+                        opp['risk_warning'] = recommendation.risk_warning or ''
+                    else:
+                        opp['is_favorable'] = False
+                        opp['kelly_fraction'] = 0.0
+                        opp['recommended_amount'] = 0.0
+                        opp['risk_warning'] = opp.get('reject_reason') or ''
+                except Exception as e:
+                    self.logger.debug(f"Could not annotate {opp['symbol']}: {e}")
+        finally:
+            conn.close()
 
     async def refresh_data(self):
         """Refresh all dashboard data with real-time progress"""
@@ -1043,25 +1432,39 @@ class TradingDashboard:
             st.error("This should not happen if setup is correct. Check logs.")
         
         col1, col2, col3 = st.columns([2, 1, 1])
-        
+
         with col1:
+            prices_asof = st.session_state.get('prices_as_of')
             if st.session_state.last_update:
-                st.caption(f"Last updated: {st.session_state.last_update.strftime('%H:%M:%S')}")
-        
+                st.caption(f"Prices fetched this session at "
+                           f"{st.session_state.last_update.strftime('%H:%M:%S')}")
+            elif prices_asof:
+                st.caption(f"Showing saved data. Newest cached price bar: {prices_asof}")
+            else:
+                st.caption("Showing saved data. No cached prices found yet.")
+
         with col2:
-            if st.button("Refresh Data"):
-                # Use session state to trigger refresh
+            # The ONLY thing on this page that calls an external API.
+            if st.button("Refresh prices", type="primary",
+                         help="Fetches live market data and re-scores the universe. "
+                              "This is the only action that calls an external API, so "
+                              "nothing else on this page consumes rate limit."):
                 st.session_state.needs_refresh = True
                 st.rerun()
-        
+
         with col3:
-            # Auto-refresh status display only
-            if not st.session_state.auto_mode:
-                st.write("🔄 Auto-refresh: ON (15min)")
-                st.caption("Auto-refresh is active when automated mode is off")
-            else:
-                st.write("🔄 Auto-refresh: OFF")
-                st.caption("Auto-refresh disabled in automated mode")
+            st.caption("Auto-refresh is off by design — it was exhausting the "
+                       "market-data rate limit. Browsing and switching tabs never "
+                       "re-fetches. Settlement is still checked every time.")
+
+        # A position closing is never silent, even when it happened during a
+        # background settlement check on page load.
+        settled = st.session_state.pop('settled_on_load', None)
+        if settled:
+            lines = " · ".join(
+                f"**{s['symbol']}** ({s['exit_type'].replace('_', ' ')})"
+                for s in settled)
+            st.warning(f"Settled {len(settled)} overdue position(s) on load: {lines}")
     
     def render_portfolio_overview(self):
         """Render portfolio overview section"""
@@ -1131,15 +1534,129 @@ class TradingDashboard:
             if st.button("🛑 Emergency Stop", type="secondary"):
                 st.warning("Emergency stop activated - all automated trading paused")
     
+    def render_proposals(self, opportunities: List[Dict]):
+        """
+        The shortlist: the few bets actually worth putting in front of someone.
+
+        Ranked by how little forecasting skill they demand (the fee's share of the
+        pot), NOT by ensemble score. The score has been measured as mildly
+        anti-predictive out of sample -- z = -3.11 across 321 assets -- so ordering by
+        it descending would rank by the thing that precedes worse outcomes.
+
+        Crucially this section is allowed to come back empty, with reasons. A screen
+        that always finds ten opportunities because it has ten slots is a screen that
+        tells you nothing.
+        """
+        from src.trading.selection import select_proposals
+
+        st.subheader("Today's proposals")
+
+        held = {bet['symbol'] for bet in (st.session_state.get('active_bets_data') or [])}
+
+        control_left, control_right = st.columns([1, 3])
+        with control_left:
+            max_hurdle = st.slider(
+                "Max skill required (pts)", min_value=1.0, max_value=8.0,
+                value=float(self.config.get('trading', {}).get('max_proposal_edge_pct', 3.0)),
+                step=0.1, key="proposal_max_hurdle",
+                help="The rake ceiling. A bet needing more than ~3 points of edge "
+                     "asks for better forecasting than professional funds deliver.")
+
+        shortlist = select_proposals(
+            opportunities,
+            limit=int(self.config.get('trading', {}).get('top_n_display', 10)),
+            max_required_edge_pct=max_hurdle,
+            held_symbols=held,
+        )
+
+        if shortlist.is_empty:
+            st.info(f"**Nothing worth proposing right now.** "
+                    f"{shortlist.considered} assets considered.")
+            if shortlist.rejected:
+                st.caption("Why: " + " · ".join(
+                    f"**{count}** {reason}"
+                    for reason, count in sorted(shortlist.rejected.items(),
+                                                key=lambda kv: -kv[1])))
+                if any('below minimum' in r for r in shortlist.rejected):
+                    st.caption("Assets rejected for size are usually the *cheapest* "
+                               "tables — Kelly shrinks as barriers widen. Adding cash, "
+                               "or lowering `min_bet_amount`, would let them through.")
+            return
+
+        with control_right:
+            st.caption(f"**{len(shortlist.proposals)} of {shortlist.considered}** "
+                       f"assets clear the bar. Ranked by **lowest skill required** — "
+                       f"the score is shown but does not set the order, because out of "
+                       f"sample it has been mildly *anti*-predictive.")
+
+        rows = []
+        for opp in shortlist.proposals:
+            rows.append({
+                '#': opp['proposal_rank'],
+                'Symbol': opp['symbol'],
+                'Type': opp.get('asset_type', 'stock').upper(),
+                'Need right': f"{opp['break_even_pct']:.0f} in 100",
+                'Fees take': opp['required_edge_pct'],
+                'Hurdle': opp['hurdle'],
+                'Risk / Reward': f"-${opp['loss_threshold']:.2f} / +${opp['win_threshold']:.2f}",
+                'Score': opp.get('raw_score'),
+                'Suggested size': opp['recommended_amount'],
+            })
+
+        st.caption("Select a row to review and place the bet.")
+        event = st.dataframe(
+            pd.DataFrame(rows), use_container_width=True, hide_index=True,
+            on_select="rerun", selection_mode="single-row",
+            key="proposal_table",
+            column_config={
+                '#': st.column_config.NumberColumn('#', width='small'),
+                'Fees take': st.column_config.NumberColumn(
+                    'Fees take', format="%.1f%% of pot",
+                    help="The broker's cut as a share of everything at stake. This is "
+                         "what sets the order: a lower rake is a cheaper table, needing "
+                         "fewer extra correct calls per hundred to break even."),
+                'Need right': st.column_config.TextColumn(
+                    'Need right', width='small',
+                    help="Of every 100 such bets, how many must win to break even "
+                         "after fees. Luck alone already wins about 40."),
+                'Score': st.column_config.NumberColumn(
+                    'Score', format="%.1f",
+                    help="Ensemble ranking signal, for information only. It does not "
+                         "set the order here."),
+                'Suggested size': st.column_config.NumberColumn(
+                    'Suggested size', format="$%.0f",
+                    help="Fractional Kelly on this asset's own barriers, after the "
+                         "correlation haircut for positions already open."),
+            })
+
+        st.caption("These are the **cheapest tables**, not predicted winners. No "
+                   "signal in this system has yet demonstrated an edge, so treat the "
+                   "suggested sizes as research positions.")
+
+        if event.selection and event.selection.rows:
+            chosen = shortlist.proposals[event.selection.rows[0]]
+            self.show_bet_placement_dialog(chosen, held)
+
     def render_opportunities(self):
         """Render comprehensive opportunities section with algorithm breakdowns"""
         st.header("Market Opportunities")
 
         opportunities = st.session_state.opportunities_data
         if not opportunities:
-            st.info("No opportunities available. Click 'Refresh Data' to update.")
+            st.info("No opportunities available. Click 'Refresh prices' to update.")
             return
 
+        # The shortlist comes first: it is the answer to "what should I do?", where
+        # the full table below is the evidence behind it.
+        self.render_proposals(opportunities)
+
+        st.divider()
+        with st.expander(f"Full ranking — all {len(opportunities)} assets scored",
+                         expanded=False):
+            self._render_full_opportunity_list(opportunities)
+
+    def _render_full_opportunity_list(self, opportunities: List[Dict]):
+        """The complete scored universe, with filters. Evidence, not recommendation."""
         # Filter controls
         col1, col2, col3 = st.columns(3)
 
@@ -1216,13 +1733,53 @@ class TradingDashboard:
         # Display asset information
         st.subheader(f"{symbol} - {opp.get('asset_type', 'stock').upper()}")
 
-        col1, col2 = st.columns(2)
+        stake = opp.get('recommended_amount') or 0.0
+        win_pct = opp.get('win_threshold')
+        loss_pct = opp.get('loss_threshold')
+        break_even = opp.get('break_even_pct')
+        rake = opp.get('required_edge_pct')
+
+        # State the bet in money before stating it in probability. This is the part
+        # the user is actually agreeing to, and it is exact.
+        if win_pct and loss_pct and stake:
+            price = opp['current_price']
+            fee = self.config.get('trading', {}).get('trading_fee_percentage', 0.25) / 100
+            st.markdown(
+                f"**You are staking ${stake:,.2f} on {symbol} at ${price:,.2f}.**\n\n"
+                f"- Sell automatically at **${price * (1 + win_pct / 100):,.2f}** "
+                f"(+{win_pct:.2f}%) for a gain of about "
+                f"**${stake * win_pct / 100:,.2f}**\n"
+                f"- Or at **${price * (1 - loss_pct / 100):,.2f}** "
+                f"(−{loss_pct:.2f}%) for a loss of about "
+                f"**${stake * loss_pct / 100:,.2f}**\n"
+                f"- Either way you pay about **${stake * 2 * fee:,.2f}** in fees\n"
+                f"- If neither level is reached, it closes at market after "
+                f"**{self.config.get('trading', {}).get('max_hold_days', 30)} days**"
+            )
+
+        col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Current Price", f"${opp['current_price']:,.2f}")
-            st.metric("Final Probability", f"{opp['final_probability']:.1f}%")
+            st.metric("Suggested stake", f"${stake:,.0f}",
+                      help=f"{opp['kelly_fraction'] * 100:.2f}% of cash — fractional "
+                           f"Kelly on this asset's barriers, after the correlation "
+                           f"haircut for positions already open.")
         with col2:
-            st.metric("Kelly Fraction", f"{opp['kelly_fraction']*100:.1f}%")
-            st.metric("Recommended Amount", f"${opp['recommended_amount']:,.0f}")
+            if break_even is not None:
+                st.metric("Must win", f"{break_even:.0f} in 100",
+                          help=f"Break-even after fees is {break_even:.2f}%. Pure luck "
+                               f"already wins about 40 in 100 from the barrier shape.")
+        with col3:
+            if rake is not None:
+                st.metric("Fees take", f"{rake:.1f}% of pot",
+                          help="The broker's cut as a share of everything at stake. "
+                               "This is the only hurdle that is known exactly.")
+
+        if not opp.get('is_calibrated', self._calibration_is_fitted()):
+            st.info(f"The score of **{opp['final_probability']:.1f}** is a ranking "
+                    f"signal, not a probability — it has not been calibrated, and out "
+                    f"of sample it has been mildly *anti*-predictive. Nothing here "
+                    f"forecasts that this bet will win; the numbers above describe "
+                    f"what it costs and what it pays.")
 
         # Show algorithm predictions
         st.write("**Individual Algorithm Predictions:**")
@@ -1273,7 +1830,8 @@ class TradingDashboard:
                         probability=opp['final_probability'],
                         current_price=opp['current_price'],
                         algorithms_dict=opp['algorithms'],  # Pass the full algorithms dictionary
-                        currency=opp.get('currency', 'USD')  # Pass original currency
+                        currency=opp.get('currency', 'USD'),  # Pass original currency
+                        opportunity=opp,  # Carries this asset's own barriers
                     ))
                     if success:
                         st.success(f"✓ Bet placed successfully for {symbol}!")
@@ -1305,11 +1863,32 @@ class TradingDashboard:
             def format_algo_value(val):
                 return val if val is not None else None  # Keep None for proper sorting
 
+            # Per-asset economics. These do NOT depend on the model being calibrated
+            # -- they follow from the asset's own volatility and the fee -- so they
+            # are the columns a user can actually act on today.
+            score = opp.get('raw_score', opp.get('final_probability'))
+            break_even = opp.get('break_even_pct')
+            margin = (score - break_even) if (score is not None and break_even) else None
+
+            win_pct = opp.get('win_threshold')
+            loss_pct = opp.get('loss_threshold')
+            rake = opp.get('required_edge_pct')
+
             df_data.append({
                 'Symbol': symbol_display,
                 'Type': opp.get('asset_type', 'stock').upper(),
                 'Price': opp['current_price'],
-                'Final Prob': opp['final_probability'],
+                'Score': score,
+                # Plain-language versions of the same arithmetic. "43.28% break-even"
+                # and "3.26 pts of required edge" are quant units that mean nothing
+                # to someone deciding whether to place a bet; these say the same
+                # thing as a hit rate, a rake, and a risk/reward in money.
+                'Need right': (f"{break_even:.0f} in 100" if break_even else None),
+                'Fees take': rake,
+                'Hurdle': self._hurdle_label(rake),
+                'Risk / Reward': (f"-${loss_pct:.2f} / +${win_pct:.2f}"
+                                  if win_pct and loss_pct else None),
+                'Status': self._opportunity_status(opp),
                 'Kelly %': opp['kelly_fraction']*100,
                 'Recommended': opp['recommended_amount'] if opp['is_favorable'] else 0,
                 'LSTM': format_algo_value(opp['algorithms']['lstm']),
@@ -1335,7 +1914,41 @@ class TradingDashboard:
                     "Symbol": st.column_config.TextColumn("Symbol", width="medium"),
                     "Type": st.column_config.TextColumn("Type", width="small"),
                     "Price": st.column_config.NumberColumn("Price", format="$%.2f"),
-                    "Final Prob": st.column_config.NumberColumn("Final Prob", format="%.1f%%"),
+                    "Score": st.column_config.NumberColumn(
+                        "Score", format="%.1f",
+                        help="Ensemble ranking signal. Compares assets against each "
+                             "other; its level is not a probability unless the "
+                             "Reliability tab says calibration is fitted."),
+                    "Need right": st.column_config.TextColumn(
+                        "Need right", width="small",
+                        help="How many of every 100 such bets must win just to break "
+                             "even, after fees. Pure luck already wins about 40 in "
+                             "100 from the barrier shape alone, so the gap above 40 "
+                             "is what your judgement has to supply. Exact — does not "
+                             "depend on the model."),
+                    "Fees take": st.column_config.NumberColumn(
+                        "Fees take", format="%.1f%% of pot",
+                        help="The broker's cut, as a share of everything at stake in "
+                             "the bet. A 0.50% round trip on a bet that only swings "
+                             "10% means fees eat 5% of the pot before you play — like "
+                             "a casino rake. Lower is a cheaper table."),
+                    "Hurdle": st.column_config.TextColumn(
+                        "Hurdle", width="small",
+                        help="Plain reading of the rake. Low means the fees barely "
+                             "matter and modest skill can win. Very high means you "
+                             "would need professional-grade forecasting just to "
+                             "break even."),
+                    "Risk / Reward": st.column_config.TextColumn(
+                        "Risk / Reward", width="small",
+                        help="Per $100 staked: what you lose if the stop hits, versus "
+                             "what you make if the target hits. Both scale with the "
+                             "asset's own volatility."),
+                    "Status": st.column_config.TextColumn(
+                        "Status", width="small",
+                        help="Why this row is or is not actionable. 'Too small' means "
+                             "Kelly sized it below the minimum bet, which happens on "
+                             "wide-barrier assets once the correlation haircut for "
+                             "the open book is applied."),
                     "Kelly %": st.column_config.NumberColumn("Kelly %", format="%.1f%%"),
                     "Recommended": st.column_config.NumberColumn("Recommended", format="$%.0f"),
                     "LSTM": st.column_config.NumberColumn("LSTM", format="%.1f%%"),
@@ -1496,7 +2109,9 @@ class TradingDashboard:
                             symbol=opp['symbol'],
                             probability=opp['final_probability'],
                             current_price=opp['current_price'],
-                            currency=opp.get('currency', 'USD')
+                            algorithms_dict=opp.get('algorithms'),
+                            currency=opp.get('currency', 'USD'),
+                            opportunity=opp,  # Carries this asset's own barriers
                         ))
                         if success:
                             st.rerun()
@@ -1554,8 +2169,13 @@ class TradingDashboard:
             axis=1
         )
 
-        display_df['Win Target'] = display_df['win_threshold'].apply(lambda x: f"${x:,.2f}")
-        display_df['Stop Loss'] = display_df['loss_threshold'].apply(lambda x: f"${x:,.2f}")
+        # Show the barrier as both a price and a percentage. Under volatility-scaled
+        # barriers the percentage differs per asset, so the price alone tells you
+        # nothing about how far the bet has to travel.
+        display_df['Win Target'] = display_df.apply(
+            lambda x: f"${x['win_price']:,.2f} (+{x['win_pct']:.2f}%)", axis=1)
+        display_df['Stop Loss'] = display_df.apply(
+            lambda x: f"${x['loss_price']:,.2f} (-{x['loss_pct']:.2f}%)", axis=1)
         display_df['Duration'] = display_df['entry_time'].apply(
             lambda x: str(datetime.now() - x).split('.')[0] if isinstance(x, datetime) else "N/A"
         )
@@ -1590,8 +2210,10 @@ class TradingDashboard:
                     st.write(f"**P&L - Fees:** ${pnl_after_fees:+.2f}")
 
                 with col3:
-                    st.write(f"**Win Target:** ${bet['win_threshold']:,.2f}")
-                    st.write(f"**Stop Loss:** ${bet['loss_threshold']:,.2f}")
+                    st.write(f"**Win Target:** ${bet['win_price']:,.2f} "
+                             f"(+{bet['win_pct']:.2f}%)")
+                    st.write(f"**Stop Loss:** ${bet['loss_price']:,.2f} "
+                             f"(-{bet['loss_pct']:.2f}%)")
 
                 with col4:
                     duration = str(datetime.now() - bet['entry_time']).split('.')[0] if isinstance(bet['entry_time'], datetime) else "N/A"
@@ -2253,6 +2875,273 @@ class TradingDashboard:
             st.error(f"Error calculating statistics: {e}")
             self.logger.error(f"Statistics error: {e}")
 
+    def _kelly_reference(self):
+        """Kelly calculator instance, for the break-even figure."""
+        from src.kelly.calculator import KellyCalculator
+        return KellyCalculator(self.config)
+
+    def _calibration_is_fitted(self) -> bool:
+        """Whether a fitted ensemble calibration exists on disk."""
+        try:
+            from src.prediction.calibration import EnsembleCalibrator
+            return EnsembleCalibrator().is_fitted
+        except Exception:
+            return False
+
+    def render_calibration_status(self):
+        """
+        Show what the user needs to decide: the bar this payoff has to clear, the
+        skill it demands, what has actually been delivered, and what the score means.
+
+        Without this the dashboard renders an uncalibrated score in a column called
+        "Probability" with no reference point, which is how a 62% reading was read as
+        an edge for six months while the real break-even sat at 43.75%.
+        """
+        from src.trading.barriers import BarrierPolicy
+        from src.ui.reliability_panel import render_decision_panel
+
+        kelly = self._kelly_reference()
+        policy = BarrierPolicy(self.config)
+
+        # Portfolio-level reference barriers. Per-asset figures appear in the
+        # opportunities table, where they differ by volatility.
+        if policy.is_volatility_scaled:
+            spec = policy._spec_from_sigma(
+                0.018 * (policy.horizon_days ** 0.5) * 100.0)  # a typical 1.8%-vol name
+            reference_win, reference_loss = spec.win_pct, spec.loss_pct
+        else:
+            reference_win, reference_loss = policy.fixed_win_pct, policy.fixed_loss_pct
+
+        # Expected days to target is a constant under volatility scaling:
+        # (win_sigma * sqrt(horizon))^2 bars. Stated once here rather than repeated
+        # identically down every row of the table.
+        expected_days = None
+        if policy.is_volatility_scaled:
+            expected_days = (policy.win_sigma ** 2) * policy.horizon_days
+
+        open_positions = 0
+        try:
+            open_positions = asyncio.run(self.portfolio_manager._count_alive_bets())
+        except Exception as e:
+            self.logger.debug(f"Could not count open positions: {e}")
+
+        render_decision_panel(
+            db_path=str(self.portfolio_manager.db_path),
+            break_even_pct=policy.break_even(reference_win, reference_loss) * 100.0,
+            geometry_pct=policy.geometry_probability * 100.0,
+            required_edge_pct=policy.required_edge(reference_win, reference_loss),
+            is_calibrated=self._calibration_is_fitted(),
+            expected_days=expected_days,
+            open_positions=open_positions,
+            correlation_haircut=kelly.correlation_haircut(open_positions + 1),
+        )
+
+    def render_reliability_tab(self):
+        """Reliability and execution-quality panels."""
+        from src.ui.reliability_panel import render_execution_quality, render_reliability
+
+        st.header("Reliability")
+        st.caption(
+            "Does a predicted probability match the frequency actually delivered, and "
+            "do exits land where they were designed to? These are the two questions "
+            "that decide whether the strategy can work."
+        )
+
+        self.render_calibration_status()
+        st.divider()
+
+        db_path = str(self.portfolio_manager.db_path)
+        render_reliability(db_path, self._kelly_reference().break_even_probability * 100.0)
+        st.divider()
+        render_execution_quality(db_path)
+
+    def _admin(self):
+        """Portfolio admin API for the current database."""
+        from src.portfolio.admin import PortfolioAdmin
+        return PortfolioAdmin(self.portfolio_manager.db_path)
+
+    def render_portfolio_admin_tab(self):
+        """
+        Cash movements and database lifecycle.
+
+        These were loose scripts run by hand, which is how a portfolio ends up in a
+        state nobody can reconstruct. Two rules are enforced here rather than trusted
+        to the operator: every cash movement goes through the transaction ledger (so
+        reconciliation keeps working), and every destructive action snapshots first
+        (so it can be undone).
+        """
+        from src.portfolio.admin import AdminError
+
+        admin = self._admin()
+        st.header("Portfolio & Data")
+
+        try:
+            summary = admin.summary()
+        except Exception as e:
+            st.error(f"Could not read the database: {e}")
+            return
+
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Cash", f"${summary['cash_balance']:,.2f}")
+        col2.metric("Open bets", summary['open_bets'])
+        col3.metric("Realised P&L", f"${summary['realised_pnl']:+,.2f}")
+        col4.metric("Database", f"{summary['db_size_mb']:.0f} MB",
+                    help=f"{summary['price_bars']:,} price bars, "
+                         f"{summary['stored_predictions']:,} stored predictions")
+        st.caption(f"Deposited ${summary['deposited']:,.2f} · "
+                   f"withdrawn ${summary['withdrawn']:,.2f} · "
+                   f"{summary['snapshots']} saved snapshot(s)")
+
+        st.divider()
+
+        # ------------------------------------------------------------ cash
+        st.subheader("Cash")
+        cash_left, cash_right = st.columns(2)
+
+        with cash_left:
+            st.markdown("**Add cash**")
+            deposit_amount = st.number_input(
+                "Amount to add", min_value=0.01, value=1000.0, step=100.0,
+                key="admin_deposit_amount")
+            deposit_note = st.text_input("Note (optional)", key="admin_deposit_note")
+            if st.button("Add cash", key="admin_deposit_btn"):
+                try:
+                    balance = admin.deposit(deposit_amount, deposit_note)
+                    st.success(f"Added ${deposit_amount:,.2f}. Cash is now ${balance:,.2f}.")
+                    st.session_state.cached_state_loaded = False
+                    st.rerun()
+                except AdminError as e:
+                    st.error(str(e))
+
+        with cash_right:
+            st.markdown("**Withdraw cash**")
+            st.caption(f"Available now: **${summary['cash_balance']:,.2f}**. Money in "
+                       f"open positions can only be withdrawn after they close.")
+            withdraw_amount = st.number_input(
+                "Amount to withdraw", min_value=0.01,
+                value=min(1000.0, max(0.01, summary['cash_balance'])), step=100.0,
+                key="admin_withdraw_amount")
+            withdraw_note = st.text_input("Note (optional)", key="admin_withdraw_note")
+            if st.button("Withdraw cash", key="admin_withdraw_btn"):
+                try:
+                    balance = admin.withdraw(withdraw_amount, withdraw_note)
+                    st.success(f"Withdrew ${withdraw_amount:,.2f}. Cash is now ${balance:,.2f}.")
+                    st.session_state.cached_state_loaded = False
+                    st.rerun()
+                except AdminError as e:
+                    st.error(str(e))
+
+        history = admin.cash_history(limit=20)
+        if history:
+            with st.expander("Cash in / out history"):
+                st.dataframe(
+                    pd.DataFrame([{
+                        'When': h['timestamp'][:19].replace('T', ' '),
+                        'Type': h['type'],
+                        'Amount': h['amount'],
+                        'Balance after': h['balance_after'],
+                        'Note': h['description'],
+                    } for h in history]),
+                    use_container_width=True, hide_index=True,
+                    column_config={
+                        'Amount': st.column_config.NumberColumn(format="$%+,.2f"),
+                        'Balance after': st.column_config.NumberColumn(format="$%,.2f"),
+                    })
+
+        st.divider()
+
+        # -------------------------------------------------------- snapshots
+        st.subheader("Snapshots")
+        st.caption("A snapshot is a complete copy of the database — positions, cash "
+                   "ledger, predictions and cached prices. Restore and reset both "
+                   "take one automatically first, so either can be undone.")
+
+        snap_left, snap_right = st.columns([1, 2])
+
+        with snap_left:
+            snapshot_label = st.text_input("Label", value="manual",
+                                           key="admin_snapshot_label")
+            if st.button("Save snapshot now", key="admin_snapshot_btn"):
+                try:
+                    snapshot = admin.create_snapshot(snapshot_label)
+                    st.success(f"Saved {snapshot.name} ({snapshot.size_mb:.0f} MB)")
+                    st.rerun()
+                except AdminError as e:
+                    st.error(str(e))
+
+        snapshots = admin.list_snapshots()
+        with snap_right:
+            if not snapshots:
+                st.info("No snapshots yet.")
+            else:
+                st.dataframe(
+                    pd.DataFrame([{
+                        'Snapshot': s.name,
+                        'Taken': s.created.strftime('%Y-%m-%d %H:%M:%S'),
+                        'Label': s.label,
+                        'Size (MB)': round(s.size_mb, 1),
+                    } for s in snapshots]),
+                    use_container_width=True, hide_index=True, height=200)
+
+        if snapshots:
+            st.markdown("**Restore from a snapshot**")
+            st.caption("Replaces the live database. The current state is saved as a "
+                       "`pre-restore` snapshot first, so this is reversible.")
+            chosen = st.selectbox("Snapshot to restore",
+                                  [s.name for s in snapshots],
+                                  key="admin_restore_choice")
+            confirm_restore = st.checkbox(
+                f"I understand this replaces the current book "
+                f"({summary['open_bets']} open bets, ${summary['cash_balance']:,.2f} cash)",
+                key="admin_restore_confirm")
+            if st.button("Restore", key="admin_restore_btn",
+                         disabled=not confirm_restore):
+                try:
+                    safety = admin.restore_snapshot(chosen)
+                    st.success(f"Restored {chosen}. Previous state saved as "
+                               f"{safety.name if safety else 'n/a'}.")
+                    st.session_state.cached_state_loaded = False
+                    st.rerun()
+                except AdminError as e:
+                    st.error(str(e))
+
+        st.divider()
+
+        # ------------------------------------------------------------ reset
+        st.subheader("Start over")
+        st.caption("Clears positions, the cash ledger, predictions and performance "
+                   "history, then opens with the capital you specify. **Your saved "
+                   "snapshots are not touched**, and the current state is snapshotted "
+                   "first.")
+
+        reset_left, reset_right = st.columns(2)
+        with reset_left:
+            new_capital = st.number_input(
+                "Opening capital", min_value=0.0,
+                value=float(self.config.get('trading', {}).get('initial_capital', 10000.0)),
+                step=1000.0, key="admin_reset_capital")
+            keep_prices = st.checkbox(
+                "Keep cached price history", value=True, key="admin_reset_keep_prices",
+                help="Recommended. Price bars are an expensive, rate-limited cache "
+                     "with nothing to do with your trading record — clearing them "
+                     "forces a full re-download.")
+
+        with reset_right:
+            st.warning(f"This will clear **{summary['total_bets']} bets** and a cash "
+                       f"ledger of **${summary['cash_balance']:,.2f}**.")
+            typed = st.text_input('Type RESET to confirm', key="admin_reset_typed")
+            if st.button("Clear everything and start over", key="admin_reset_btn",
+                         type="primary", disabled=(typed.strip().upper() != "RESET")):
+                try:
+                    safety = admin.reset(new_capital, keep_price_history=keep_prices)
+                    st.success(f"Portfolio reset. Opening capital "
+                               f"${new_capital:,.2f}. Previous state saved as "
+                               f"{safety.name} — restore it above to undo this.")
+                    st.session_state.cached_state_loaded = False
+                    st.rerun()
+                except AdminError as e:
+                    st.error(str(e))
+
     def run(self):
         """Main dashboard runner"""
         st.set_page_config(
@@ -2262,28 +3151,26 @@ class TradingDashboard:
             initial_sidebar_state="collapsed"
         )
 
-        # Auto-refresh when not in automated mode
-        if not st.session_state.auto_mode:
-            refresh_count = st_autorefresh(interval=60*60*1000, key="dashboard_refresh")  # 1 hour
-
-            # Track last refresh count to detect actual changes (not just reruns)
-            if 'last_refresh_count' not in st.session_state:
-                st.session_state.last_refresh_count = 0
-
-            # Only trigger refresh when the count CHANGES (new auto-refresh happened)
-            if refresh_count > st.session_state.last_refresh_count:
-                st.session_state.needs_refresh = True
-                st.session_state.last_refresh_count = refresh_count
-
-        # Handle refresh requests
+        # NO AUTO-REFRESH. Market data is fetched only when the user asks for it.
+        #
+        # This page used to call st_autorefresh() on a timer, which re-fetched the
+        # whole universe unattended and burned through the yfinance rate limit. Every
+        # Streamlit rerun -- including switching tabs, sorting a table or clicking a
+        # row -- re-runs this method, so anything that fetches here fetches constantly.
+        #
+        # The only path that touches an external API is the explicit "Refresh prices"
+        # button. Everything else reads the local database.
         if st.session_state.needs_refresh:
             asyncio.run(self.refresh_data())
             st.session_state.needs_refresh = False
 
-        # Initialize data on first load
-        if st.session_state.last_update is None:
-            asyncio.run(self.refresh_data())
-        
+        # First load reads the DATABASE only: portfolio, bets, and the most recent
+        # stored predictions. No network calls, so opening the page (or reopening it
+        # in a new browser session) costs nothing in API quota.
+        if not st.session_state.get('cached_state_loaded'):
+            asyncio.run(self.load_cached_state())
+            st.session_state.cached_state_loaded = True
+
         # Render dashboard components
         self.render_header()
 
@@ -2291,10 +3178,15 @@ class TradingDashboard:
         if 'active_tab' not in st.session_state:
             st.session_state.active_tab = "Trading Dashboard"
 
+        tab_options = ["Trading Dashboard", "All Bets", "Reliability",
+                       "Market Data", "Portfolio & Data"]
+        if st.session_state.active_tab not in tab_options:
+            st.session_state.active_tab = tab_options[0]
+
         selected_tab = st.radio(
             "Dashboard Sections:",
-            options=["Trading Dashboard", "All Bets", "Market Data"],
-            index=["Trading Dashboard", "All Bets", "Market Data"].index(st.session_state.active_tab),
+            options=tab_options,
+            index=tab_options.index(st.session_state.active_tab),
             horizontal=True,
             key="dashboard_tab_selector"
         )
@@ -2307,6 +3199,10 @@ class TradingDashboard:
 
         # Render content based on selected tab
         if selected_tab == "Trading Dashboard":
+            # State up front whether the numbers below are probabilities or scores.
+            self.render_calibration_status()
+            st.divider()
+
             # Main trading dashboard content
             self.render_portfolio_overview()
             st.divider()
@@ -2328,6 +3224,12 @@ class TradingDashboard:
         elif selected_tab == "All Bets":
             # Bets tab content
             self.render_bets_tab()
+
+        elif selected_tab == "Reliability":
+            self.render_reliability_tab()
+
+        elif selected_tab == "Portfolio & Data":
+            self.render_portfolio_admin_tab()
 
         elif selected_tab == "Market Data":
             # Market data visualization tab

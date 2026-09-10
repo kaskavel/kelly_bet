@@ -1,0 +1,127 @@
+C:\Users\kkaskavelis\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\pandas\core\nanops.py:1632: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  return spearmanr(a, b)[0]
+
+==============================================================================
+EDGE ANALYSIS - scores_powered.csv
+==============================================================================
+  observations           11942
+  distinct assets        399
+  date range             2025-12-26 .. 2026-07-27
+  win-barrier rate       35.83%
+  break-even (mean)      43.50%
+  required edge (mean)   3.50 pts
+  mean net return/bet    -0.720%
+
+  resolution mix:
+    loss_barrier     6720 ( 56.3%)
+    win_barrier      4279 ( 35.8%)
+    time_barrier      943 (  7.9%)
+
+==============================================================================
+1. IS THERE ANY EDGE OVERALL?
+==============================================================================
+
+  net return per bet, vs zero
+  slice                       n      net%  naiveSE   clustSE     eff.n   verdict
+  all bets                11942    -0.720    0.079     1.449        36   z=-0.50 noise
+
+  Naive SE would claim +/-0.079%; clustering says +/-1.449%.
+  Effective sample is ~36, not 11942 -- a factor of 333 fewer.
+
+==============================================================================
+2. DOES THE ENSEMBLE SCORE PREDICT ANYTHING?
+==============================================================================
+  score band                  n      net%  naiveSE   clustSE     eff.n   verdict
+  0-35%                    3399    -1.076    0.155     1.669        29   z=-0.64 noise
+  35-40%                   2693    -0.730    0.174     0.998        82   z=-0.73 noise
+  40-45%                   2220    -0.596    0.185     0.737       140   z=-0.81 noise
+  45-50%                   1904    -0.748    0.183     0.900        79   z=-0.83 noise
+  50-55%                   1130    -0.422    0.250     0.557       227   z=-0.76 noise
+  55-101%                   596    +0.427    0.306     0.702       113   z=+0.61 noise
+
+  Spearman(score, outcome) within-asset: mean -0.0452 +/- 0.0145 across 321 assets   z=-3.11 STRONG
+  (computed per asset then averaged, so cross-asset differences in base rate cannot masquerade as signal)
+
+==============================================================================
+2b. IS THE SCORE A TIMING SIGNAL, IN EITHER DIRECTION?
+==============================================================================
+  Score ranked WITHIN each asset, so a persistently high-scoring asset
+  cannot be confused with a well-timed entry. If the score is reliably
+  anti-predictive, inverting it is itself an edge -- worth knowing.
+
+  within-asset rank           n      net%  naiveSE   clustSE     eff.n   verdict
+  bottom 20%               2235    -0.212    0.194     0.542       287   z=-0.39 noise
+  20-40%                   2289    -0.055    0.187     0.533       283   z=-0.10 noise
+  middle 20%               2288    -0.785    0.182     0.797       120   z=-0.98 noise
+  60-80%                   2289    -1.045    0.177     0.767       121   z=-1.36 weak
+  top 20%                  2642    -1.383    0.162     1.504        31   z=-0.92 noise
+
+  top-minus-bottom spread: -1.171% +/- 1.599   z=-0.73 noise
+  (a large POSITIVE spread means the score times entries; a large
+   NEGATIVE one means inverting it does)
+
+==============================================================================
+3. IS THE MID-WIDTH BARRIER BAND REAL, OR ONE ASSET?
+==============================================================================
+  width quartile              n      net%  naiveSE   clustSE     eff.n   verdict
+  Q1 4.3-6.7%              2986    -0.071    0.085     0.591        62   z=-0.12 noise
+  Q2 6.7-8.9%              2985    -0.940    0.113     0.830        55   z=-1.13 weak
+  Q3 8.9-12.5%             2985    -1.021    0.151     1.593        27   z=-0.64 noise
+  Q4 12.5-40.0%            2986    -0.848    0.241     1.394        89   z=-0.61 noise
+
+  Best quartile is Q1. Concentration check:
+    282 assets contribute; top 3 supply -17% of the total return
+    assets with positive mean: 136/282
+      BIIB         n=   2  mean +6.093%
+      GS           n=   1  mean +6.064%
+      CXW          n=   3  mean +6.032%
+
+==============================================================================
+4. DOES ANY EDGE REPLICATE ACROSS TIME?
+==============================================================================
+  period                      n      net%  naiveSE   clustSE     eff.n   verdict
+  first half               5997    -0.363    0.099     0.418       336   z=-0.87 noise
+  second half              5945    -1.080    0.124     1.756        30   z=-0.61 noise
+
+  Best-quartile edge, split by period (does it hold up?):
+  period                      n      net%  naiveSE   clustSE     eff.n   verdict
+  first half               2022    +0.691    0.104     0.245       364   z=+2.82 SUGGESTIVE
+  second half               964    -1.668    0.134     0.560        55   z=-2.98 SUGGESTIVE
+
+==============================================================================
+5. THE SAME QUESTION ON NON-OVERLAPPING BETS
+==============================================================================
+  800 of 11942 bets survive the no-overlap filter
+
+  slice                       n      net%  naiveSE   clustSE     eff.n   verdict
+  all (independent)         800    -1.352    0.273     0.891        75   z=-1.52 weak
+  Q1 (independent)          289    -0.057    0.265     0.660        46   z=-0.09 noise
+  Q2 (independent)          174    -0.279    0.477     1.317        23   z=-0.21 noise
+  Q3 (independent)          170    -1.991    0.602     1.925        17   z=-1.03 weak
+  Q4 (independent)          167    -4.061    0.902     3.390        12   z=-1.20 weak
+
+==============================================================================
+6. IS THIS SAMPLE EVEN BIG ENOUGH TO DETECT AN EDGE?
+==============================================================================
+  sd(net return per bet)   8.68%
+  variance inflation       ~333x from overlap and co-movement
+  observations held        11942  (effective ~36)
+
+  edge to detect         net%/bet   indep. bets   raw obs needed   have?
+  2 pts of win rate         0.35%          2502          832,530      no
+  4 pts of win rate         0.69%           625          208,132      no
+  6 pts of win rate         1.04%           278           92,503      no
+  8 pts of win rate         1.39%           156           52,033      no
+
+  An underpowered run cannot distinguish 'no edge' from 'edge we cannot
+  see'. If the answer above is 'no', scale the run (more assets, stride 1,
+  more folds) before concluding anything from a null result.
+
+==============================================================================
+READING THIS
+==============================================================================
+  'noise' means the slice is indistinguishable from zero edge once the
+  overlap between bets is accounted for. Only STRONG, replicated across
+  both time periods and not concentrated in a couple of assets, is worth
+  trading. Anything else is a hypothesis for the next run.
+

@@ -34,7 +34,7 @@ An intelligent trading system that uses machine learning predictions and the Kel
 ### **Multi-Algorithm Prediction Engine**
 - **5 Algorithms**: Simple Moving Average, RSI, Random Forest, LSTM Neural Network, Linear Regression
 - **Ensemble Scoring**: Weighted predictions with adaptive learning
-- **Performance Tracking**: System learns which algorithms work best over time
+- **Performance Tracking**: Resolved bets are scored per algorithm by Brier score, and ensemble weights are recomputed from that
 
 ### **Kelly Criterion Position Sizing**
 - Mathematically optimal bet sizing using Kelly formula
@@ -48,7 +48,7 @@ An intelligent trading system that uses machine learning predictions and the Kel
 - **Daily/Weekly Loss Limits**: Prevent catastrophic losses
 
 ### **Paper Trading**
-- **Realistic Simulation**: 0.5% trading fees on entry and exit
+- **Realistic Simulation**: 0.25% trading fee per side (0.50% round trip)
 - **Real Market Data**: Live prices from Yahoo Finance and crypto exchanges
 - **Complete Portfolio Tracking**: Cash + active positions with P&L
 
@@ -79,7 +79,7 @@ python main.py --mode manual
 python main.py --mode automated --threshold 65
 ```
 1. System automatically places bets when probability > threshold
-2. If all probabilities < 50%, waits 30 minutes and repeats
+2. If no asset clears the break-even threshold (43.75% for a 5%/3% bet after fees), waits 30 minutes and repeats
 3. Fully autonomous trading with risk controls
 4. Great for backtesting and live deployment
 
@@ -91,7 +91,7 @@ python main.py --dashboard
 
 #### **Features**
 - **Live Portfolio Tracking**: Real-time portfolio value, cash balance, and P&L
-- **Win Rate Analytics**: Track performance with 44.4% current win rate display
+- **Reliability Panel**: Predicted probability vs delivered win rate, with the break-even line shown alongside. Current: 44.1% delivered against a 43.7% break-even at realised payoffs - i.e. no measurable edge yet.
 - **Trading Opportunities**: View top ML-predicted assets with probability scores
 - **Active Bets Monitoring**: Live bet tracking with current prices and P&L
 - **Complete Bet History**: Filter by status (won/lost/alive) with detailed analytics
@@ -229,7 +229,8 @@ conn.close()
 
 - **Paper Trading Only**: No real money at risk
 - **Circuit Breakers**: Auto-pause on dangerous conditions
-- **Conservative Kelly**: Uses 25% Kelly fraction to reduce volatility  
+- **Conservative Kelly**: Heavily fractional Kelly plus a hard position cap and a
+  per-bet risk budget  
 - **Risk Monitoring**: Continuous assessment of portfolio health
 - **Data Validation**: Extensive input validation and error handling
 - **Graceful Shutdown**: Clean database closure and position cleanup
@@ -304,8 +305,9 @@ Where:
 
 **Example**: 
 - 65% win probability, 5% win target, 3% loss limit
-- Kelly suggests betting ~8% of capital
-- Our system uses 25% of Kelly suggestion = ~2% of capital for safety
+- Capped-loss Kelly f* = p/l - q/w on fee-adjusted legs = ~11x capital
+- The configured multiplier (0.005) and the 10% position cap bring that to
+  ~5.6% of capital
 
 ## 🔮 Future Enhancements
 

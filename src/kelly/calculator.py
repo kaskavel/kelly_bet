@@ -53,19 +53,75 @@ class KellyCalculator:
         self.min_bet_amount = config.get('trading', {}).get('min_bet_amount', 100.0)
         self.max_bet_amount = config.get('trading', {}).get('max_bet_amount', 10000.0)
         self.max_bet_fraction = config.get('trading', {}).get('max_bet_fraction', 0.1)  # 10% max
-        
+        # Risk budget: cap capital-at-risk per bet (fraction * net loss). The corrected
+        # capped-loss Kelly formula is unbounded (it can exceed 1.0), so this and
+        # max_bet_fraction are the constraints that actually govern position size.
+        self.max_risk_fraction = config.get('trading', {}).get('max_risk_fraction', 0.003)
+        # Fee per side, as a decimal. Charged on entry and on exit.
+        self.fee_rate = config.get('trading', {}).get('trading_fee_percentage', 0.25) / 100.0
+        # Assumed average pairwise correlation between concurrent positions, used to
+        # haircut a standalone Kelly fraction. See correlation_haircut().
+        self.assumed_correlation = float(
+            config.get('risk', {}).get('assumed_correlation', 0.30))
+
         # Risk management
         min_prob_config = config.get('trading', {}).get('min_probability', 55.0)  # 55% minimum
         # Convert percentage to decimal if needed
         self.min_probability = min_prob_config / 100.0 if min_prob_config > 1.0 else min_prob_config
         self.max_loss_percentage = config.get('trading', {}).get('max_loss_percentage', 5.0)  # 5% max loss
-        
-    def calculate_bet_size(self, 
-                          probability: float, 
-                          current_price: float, 
+
+        # Fee-adjusted break-even probability for the configured payoff. Recomputed on
+        # every calculation; seeded here so it is always defined.
+        self.break_even_probability = self._break_even_probability(
+            config.get('trading', {}).get('win_threshold', 5.0),
+            config.get('trading', {}).get('loss_threshold', 3.0),
+        )
+
+    def _break_even_probability(self, win_threshold: float, loss_threshold: float) -> float:
+        """
+        The win probability at which this bet has exactly zero expected value.
+
+        For a barrier bet this - not 50% - is the neutral point. With no fees it is
+        l/(w+l), which for a 5%/3% bet is 37.5%; the round-trip fee raises it to
+        43.75%. Any threshold the system compares a probability against should be
+        derived from here.
+        """
+        round_trip_fee = 2 * self.fee_rate
+        win_net = win_threshold / 100.0 - round_trip_fee
+        loss_net = loss_threshold / 100.0 + round_trip_fee
+        if win_net <= 0:
+            return 1.0
+        return loss_net / (win_net + loss_net)
+
+    def correlation_haircut(self, concurrent_positions: int) -> float:
+        """
+        Scale a standalone Kelly fraction down for positions held alongside it.
+
+        Kelly for a single bet assumes that bet is the only thing at risk. It is not:
+        this system runs up to 30 concurrent long positions, and 30 correlated longs
+        behave much like one leveraged index bet. Sizing each as though it were
+        independent over-levers the portfolio by roughly the correlation factor.
+
+        With `n` simultaneous bets of average pairwise correlation rho, the effective
+        number of independent bets is n / (1 + (n-1)*rho), so each position is scaled
+        by 1 / (1 + (n-1)*rho).
+
+        At rho = 0.30, ten open positions size at 27% of standalone Kelly. That is not
+        excessive conservatism -- it is what keeps total portfolio risk at the level a
+        single Kelly bet was supposed to represent.
+        """
+        n = max(1, int(concurrent_positions))
+        if n == 1 or self.assumed_correlation <= 0:
+            return 1.0
+        return 1.0 / (1.0 + (n - 1) * self.assumed_correlation)
+
+    def calculate_bet_size(self,
+                          probability: float,
+                          current_price: float,
                           available_capital: float,
                           win_threshold: Optional[float] = None,
-                          loss_threshold: Optional[float] = None) -> BetRecommendation:
+                          loss_threshold: Optional[float] = None,
+                          concurrent_positions: int = 1) -> BetRecommendation:
         """
         Calculate optimal bet size using Kelly Criterion
         
@@ -85,6 +141,8 @@ class KellyCalculator:
         if loss_threshold is None:
             loss_threshold = self.config.get('trading', {}).get('loss_threshold', 3.0)
         
+        self.concurrent_positions = max(1, int(concurrent_positions))
+
         # Create bet parameters
         bet_params = BetParameters(
             probability_win=probability / 100.0,  # Convert to decimal
@@ -102,40 +160,55 @@ class KellyCalculator:
         return self._calculate_kelly_bet(bet_params)
     
     def _calculate_kelly_bet(self, params: BetParameters) -> BetRecommendation:
-        """Calculate Kelly bet using the classic formula"""
-        
-        # Kelly Criterion formula: f = (bp - q) / b
-        # Where:
-        # f = fraction of capital to wager
-        # b = odds received (net odds = win_return / loss_risk)
-        # p = probability of winning
-        # q = probability of losing (1 - p)
-        
+        """
+        Calculate the growth-optimal bet fraction for a CAPPED-LOSS bet.
+
+        This bet does not risk the whole stake: it wins w% of the position or loses
+        l% of it. Maximising E[log(wealth)] over f gives
+
+            d/df [ p*log(1 + f*w) + q*log(1 - f*l) ] = 0
+            =>  f* = (p*w - q*l) / (w*l)  =  p/l - q/w
+
+        The all-or-nothing form f = (bp - q)/b with b = w/l is the Kelly for a bet
+        that loses the entire stake, and understates this payoff substantially.
+
+        Both w and l are taken NET OF FEES, since fees are paid on entry and exit:
+            w_net = w - 2c,  l_net = l + 2c
+        On a 5%/3% bet at 0.25% per side this moves break-even from 37.5% to 43.75%.
+        """
         p = params.probability_win
         q = 1 - p
-        
-        # Calculate odds ratio
-        # If we win: gain win_percentage
-        # If we lose: lose loss_percentage
-        win_return = params.win_percentage / 100.0  # Convert to decimal
-        loss_risk = params.loss_percentage / 100.0   # Convert to decimal
-        
-        # Net odds received = win_return / loss_risk
-        b = win_return / loss_risk
-        
-        # Kelly fraction: f = (bp - q) / b = p - q/b
-        kelly_fraction_raw = (b * p - q) / b
-        
-        # Alternative formulation: f = p - q/b
-        # kelly_fraction_raw = p - (q / b)
-        
-        self.logger.debug(f"Kelly calculation: p={p:.3f}, q={q:.3f}, b={b:.3f}, "
-                         f"raw_kelly={kelly_fraction_raw:.3f}")
-        
-        # Check if bet is favorable (positive expected value)
-        expected_value = p * win_return - q * loss_risk
+
+        win_return = params.win_percentage / 100.0   # gross win, decimal
+        loss_risk = params.loss_percentage / 100.0   # gross loss, decimal
+
+        # Net the round-trip fee out of both legs.
+        round_trip_fee = 2 * self.fee_rate
+        win_net = win_return - round_trip_fee
+        loss_net = loss_risk + round_trip_fee
+
+        # Reported odds ratio, on the net legs.
+        b = win_net / loss_net if loss_net > 0 else 0.0
+
+        if win_net <= 0:
+            # Fees exceed the entire profit target: no size can make this positive.
+            kelly_fraction_raw = -1.0
+            expected_value = -loss_net
+        else:
+            # f* = p/l - q/w  (capped-loss Kelly, fee-adjusted)
+            kelly_fraction_raw = (p / loss_net) - (q / win_net)
+            expected_value = p * win_net - q * loss_net
+
+        # Break-even probability, for logging and warnings.
+        self.break_even_probability = loss_net / (win_net + loss_net) if win_net > 0 else 1.0
+
+        self.logger.debug(f"Kelly calculation: p={p:.3f}, q={q:.3f}, "
+                          f"w_net={win_net:.4f}, l_net={loss_net:.4f}, b={b:.3f}, "
+                          f"break_even={self.break_even_probability:.3f}, "
+                          f"raw_kelly={kelly_fraction_raw:.3f}")
+
         is_favorable = expected_value > 0 and kelly_fraction_raw > 0
-        
+
         if not is_favorable:
             return BetRecommendation(
                 recommended_amount=0.0,
@@ -148,56 +221,77 @@ class KellyCalculator:
                 # Detailed calculation breakdown
                 win_probability=p,
                 loss_probability=q,
-                win_amount_ratio=win_return,
-                loss_amount_ratio=loss_risk,
-                expected_win=p * win_return,
-                expected_loss=q * loss_risk,
+                win_amount_ratio=win_net,
+                loss_amount_ratio=loss_net,
+                expected_win=p * max(win_net, 0.0),
+                expected_loss=q * loss_net,
                 kelly_formula_b=b,
                 kelly_formula_p=p,
                 kelly_formula_q=q,
                 available_capital=params.available_capital
             )
-        
-        # Apply Kelly fraction multiplier (conservative approach)
-        adjusted_kelly_fraction = kelly_fraction_raw * self.kelly_fraction_multiplier
-        
-        # Apply maximum bet fraction limit
-        final_kelly_fraction = min(adjusted_kelly_fraction, self.max_bet_fraction)
-        
+
+        # --- Sizing chain -------------------------------------------------
+        # 1. Fractional Kelly (conservative multiplier), then a correlation haircut
+        #    for everything already open. Sizing each of 30 correlated longs as though
+        #    it were the only position at risk over-levers the whole book.
+        haircut = self.correlation_haircut(getattr(self, 'concurrent_positions', 1))
+        adjusted_kelly_fraction = (kelly_fraction_raw
+                                   * self.kelly_fraction_multiplier
+                                   * haircut)
+
+        # 2. Risk budget: cap capital-at-risk per bet. Because capped-loss Kelly is
+        #    unbounded, this is normally the binding constraint and is what keeps
+        #    position size responsive to edge instead of pinned at the hard cap.
+        risk_budget_fraction = (self.max_risk_fraction / loss_net) if loss_net > 0 else 0.0
+
+        # 3. Hard position cap.
+        final_kelly_fraction = min(
+            adjusted_kelly_fraction,
+            risk_budget_fraction,
+            self.max_bet_fraction,
+        )
+
         # Calculate dollar amount
         raw_bet_amount = final_kelly_fraction * params.available_capital
-        
-        # Apply bet size limits
-        recommended_amount = max(self.min_bet_amount, 
-                               min(raw_bet_amount, self.max_bet_amount))
-        
-        # Ensure we don't exceed available capital
-        recommended_amount = min(recommended_amount, params.available_capital)
-        
+
+        # Apply the upper bet-size limit and available capital. The minimum bet is a
+        # SKIP threshold, not a floor -- raising a small Kelly bet up to the minimum
+        # would breach max_bet_fraction exactly when capital is lowest.
+        recommended_amount = min(raw_bet_amount, self.max_bet_amount, params.available_capital)
+
+        below_minimum = recommended_amount < self.min_bet_amount
+        if below_minimum:
+            recommended_amount = 0.0
+
         # Recalculate actual fraction used
         actual_fraction = recommended_amount / params.available_capital if params.available_capital > 0 else 0
-        
+
         # Determine confidence level
         confidence_level = self._determine_confidence_level(params.probability_win, kelly_fraction_raw)
-        
+
         # Generate risk warnings
-        risk_warning = self._generate_risk_warnings(params, kelly_fraction_raw, adjusted_kelly_fraction)
-        
+        risk_warning = self._generate_risk_warnings(params, kelly_fraction_raw, final_kelly_fraction)
+        if below_minimum:
+            skip_note = (f"Kelly size ${raw_bet_amount:.2f} below minimum "
+                         f"${self.min_bet_amount:.2f} - no bet")
+            risk_warning = f"{risk_warning}; {skip_note}" if risk_warning else skip_note
+
         recommendation = BetRecommendation(
             recommended_amount=recommended_amount,
             fraction_of_capital=actual_fraction,
             expected_value=expected_value,
-            is_favorable=is_favorable,
+            is_favorable=is_favorable and not below_minimum,
             kelly_fraction_raw=kelly_fraction_raw,
             confidence_level=confidence_level,
             risk_warning=risk_warning,
-            # Detailed calculation breakdown
+            # Detailed calculation breakdown (net of the round-trip fee)
             win_probability=p,
             loss_probability=q,
-            win_amount_ratio=win_return,
-            loss_amount_ratio=loss_risk,
-            expected_win=p * win_return,
-            expected_loss=q * loss_risk,
+            win_amount_ratio=win_net,
+            loss_amount_ratio=loss_net,
+            expected_win=p * win_net,
+            expected_loss=q * loss_net,
             kelly_formula_b=b,
             kelly_formula_p=p,
             kelly_formula_q=q,
@@ -210,38 +304,55 @@ class KellyCalculator:
         return recommendation
     
     def _determine_confidence_level(self, probability: float, kelly_fraction: float) -> str:
-        """Determine confidence level based on probability and Kelly fraction"""
-        if probability >= 0.75 and kelly_fraction >= 0.2:
+        """
+        Confidence based on how far the estimate clears break-even.
+
+        Measured against the fee-adjusted break-even probability rather than 50%,
+        which is not the neutral point for a barrier bet.
+        """
+        margin = probability - self.break_even_probability
+
+        if margin >= 0.20:
             return "High"
-        elif probability >= 0.65 and kelly_fraction >= 0.1:
+        elif margin >= 0.10:
             return "Medium"
-        elif probability >= 0.55 and kelly_fraction >= 0.05:
+        elif margin >= 0.03:
             return "Low"
         else:
             return "Very Low"
-    
-    def _generate_risk_warnings(self, params: BetParameters, 
-                               raw_kelly: float, adjusted_kelly: float) -> Optional[str]:
+
+    def _generate_risk_warnings(self, params: BetParameters,
+                               raw_kelly: float, final_kelly: float) -> Optional[str]:
         """Generate risk warnings for the bet"""
         warnings = []
-        
+
         # Check probability threshold
         if params.probability_win < self.min_probability:
             warnings.append(f"Low win probability ({params.probability_win:.1%})")
-        
-        # Check if Kelly fraction was significantly reduced
-        if adjusted_kelly < raw_kelly * 0.5:
-            warnings.append(f"Kelly fraction reduced from {raw_kelly:.1%} to {adjusted_kelly:.1%}")
-        
+
+        # Margin over the real neutral point for this payoff
+        margin = params.probability_win - self.break_even_probability
+        if margin < 0.05:
+            warnings.append(f"Thin margin over break-even "
+                            f"({params.probability_win:.1%} vs {self.break_even_probability:.1%})")
+
+        # Which constraint actually set the size
+        haircut = self.correlation_haircut(getattr(self, 'concurrent_positions', 1))
+        if haircut < 0.999:
+            warnings.append(f"Correlation haircut {haircut:.0%} for "
+                            f"{self.concurrent_positions} concurrent positions")
+
+        if final_kelly < raw_kelly * self.kelly_fraction_multiplier * haircut * 0.99:
+            warnings.append("Size set by risk cap, not by Kelly")
+
         # Check loss threshold
         if params.loss_percentage > self.max_loss_percentage:
-            warnings.append(f"High loss risk ({params.loss_percentage:.1%})")
-        
+            warnings.append(f"High loss risk ({params.loss_percentage:.1f}%)")
+
         # Check if betting large fraction of capital
-        fraction_of_capital = adjusted_kelly
-        if fraction_of_capital > 0.05:  # More than 5%
-            warnings.append(f"Large bet size ({fraction_of_capital:.1%} of capital)")
-        
+        if final_kelly > 0.05:  # More than 5%
+            warnings.append(f"Large bet size ({final_kelly:.1%} of capital)")
+
         return "; ".join(warnings) if warnings else None
     
     def validate_bet_parameters(self, 
@@ -270,9 +381,13 @@ class KellyCalculator:
         if available_capital < self.min_bet_amount:
             return False, f"Insufficient capital: ${available_capital} < ${self.min_bet_amount} minimum"
         
-        if probability < 50:
-            return False, f"Probability too low: {probability}% (below 50% not recommended)"
-        
+        # The neutral point for a barrier bet is l/(w+l) adjusted for fees, not 50%.
+        break_even = self._break_even_probability(win_threshold, loss_threshold) * 100.0
+        if probability < break_even:
+            return False, (f"Probability too low: {probability:.2f}% "
+                           f"(break-even for {win_threshold:.1f}%/{loss_threshold:.1f}% "
+                           f"after fees is {break_even:.2f}%)")
+
         return True, "Valid"
     
     def get_kelly_info(self) -> Dict:
@@ -282,6 +397,10 @@ class KellyCalculator:
             'min_bet_amount': self.min_bet_amount,
             'max_bet_amount': self.max_bet_amount,
             'max_bet_fraction': self.max_bet_fraction,
+            'max_risk_fraction': self.max_risk_fraction,
             'min_probability': self.min_probability,
-            'max_loss_percentage': self.max_loss_percentage
+            'max_loss_percentage': self.max_loss_percentage,
+            'fee_rate_per_side': self.fee_rate,
+            'break_even_probability': self.break_even_probability,
+            'assumed_correlation': self.assumed_correlation,
         }

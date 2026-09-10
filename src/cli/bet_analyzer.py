@@ -3,6 +3,7 @@ Bet history analysis CLI interface
 Analyzes historical betting performance with detailed statistics and insights.
 """
 
+import logging
 import sqlite3
 import pandas as pd
 import numpy as np
@@ -63,10 +64,40 @@ class BetAnalyzer:
             self.config = yaml.safe_load(f)
         
         self.db_path = Path(self.config['database']['sqlite']['path'])
-        
+        self.logger = logging.getLogger(__name__)
+
         # Initialize portfolio manager for performance tracking
         self.portfolio_manager = None
     
+    async def _settle_overdue(self):
+        """
+        Close positions past the time barrier, using stored marks only.
+
+        Reporting is not a read-only activity if the data it reads is wrong: an
+        overdue position inflates the open count and is excluded from the win rate,
+        so the report would understate both turnover and outcomes.
+        """
+        try:
+            from ..trading.settlement import settle_positions
+
+            alive = await self.portfolio_manager.get_alive_bets()
+            if not alive:
+                return
+
+            prices = {bet.symbol: bet.current_price for bet in alive
+                      if bet.current_price}
+            max_hold_days = int(self.config.get('trading', {}).get('max_hold_days', 30))
+            settled = await settle_positions(self.portfolio_manager, prices,
+                                             max_hold_days)
+
+            if settled:
+                print(f"\nSettled {len(settled)} overdue position(s) before reporting:")
+                for record in settled:
+                    print(f"  {record['symbol']}: {record['reason']}")
+
+        except Exception as e:
+            self.logger.error(f"Could not settle overdue positions: {e}")
+
     async def show_bet_history(self, limit: int = 50, status_filter: str = 'all', show_stats: bool = False):
         """Display bet history with optional filtering and statistics"""
         
@@ -75,7 +106,13 @@ class BetAnalyzer:
             from ..portfolio.manager import PortfolioManager
             self.portfolio_manager = PortfolioManager(self.config)
             await self.portfolio_manager.initialize()
-        
+
+        # Settle overdue positions before reporting. A position that should have
+        # closed weeks ago sits in the "alive" bucket and quietly distorts every
+        # statistic printed below -- win rate, average hold, realised P&L.
+        # Stored marks only, so running a report costs no API quota.
+        await self._settle_overdue()
+
         # Get bet data
         bet_history = await self._get_bet_history(limit, status_filter)
         

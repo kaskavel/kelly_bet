@@ -327,103 +327,58 @@ class BetMonitor:
         return current_prices
     
     async def _monitor_and_settle_positions(self):
-        """Monitor existing alive bets and close positions that hit win/loss thresholds"""
+        """
+        Settle open positions.
+
+        Delegates the decision to src/trading/settlement.py. This method previously
+        had its own copy of the rule which checked ONLY the price barriers -- no time
+        barrier -- and since the dashboard settles through here, anyone driving the
+        system from the UI had no time limit at all. A forex position stayed open for
+        293 days against a 60-day setting.
+        """
         try:
-            # Get all alive bets using the same query as display
-            alive_bets = await self._get_live_bets()
-            
-            if not alive_bets:
-                return
-            
-            self.logger.info(f"Monitoring {len(alive_bets)} positions for threshold triggers...")
-            
-            # Get current prices for all symbols
-            symbols_to_check = list(set(bet.symbol for bet in alive_bets))
-            current_prices = await self._get_current_prices(symbols_to_check)
-            
-            # Track settlements for reporting
-            settlements = []
-            
-            # Check each bet against thresholds
-            for bet in alive_bets:
-                if bet.symbol not in current_prices:
-                    self.logger.warning(f"Skipping {bet.symbol} - no current price available")
-                    continue
-                
-                current_price = current_prices[bet.symbol]
-                
-                # Calculate current return
-                current_return_pct = ((current_price - bet.entry_price) / bet.entry_price) * 100
-                
-                # Check thresholds (assuming long positions)  
-                hit_win_threshold = current_price >= bet.win_threshold
-                hit_loss_threshold = current_price <= bet.loss_threshold
-                
-                self.logger.debug(f"Checking {bet.symbol}: Entry=${bet.entry_price:.2f}, "
-                                f"Current=${current_price:.2f}, Return={current_return_pct:+.2f}%")
-                
-                # Determine if we need to close the position
-                should_close = False
-                close_reason = ""
-                
-                if hit_win_threshold:
-                    should_close = True
-                    close_reason = f"WIN THRESHOLD HIT: {current_return_pct:+.2f}% (target: {((bet.win_threshold/bet.entry_price - 1) * 100):+.1f}%)"
-                elif hit_loss_threshold:
-                    should_close = True
-                    close_reason = f"LOSS THRESHOLD HIT: {current_return_pct:+.2f}% (stop: {((bet.loss_threshold/bet.entry_price - 1) * 100):+.1f}%)"
-                
-                if should_close:
-                    self.logger.info(f"SETTLING POSITION - {bet.symbol}: {close_reason}")
-                    
-                    try:
-                        # We need to close the bet through the portfolio manager
-                        # Import and initialize it temporarily
-                        from ..portfolio.manager import PortfolioManager
-                        portfolio = PortfolioManager(self.config)
-                        await portfolio.initialize()
-                        
-                        # Get the full bet_id from the database (we only have first 8 chars in display)
-                        full_bet_id = await self._get_full_bet_id(bet.bet_id)
-                        if full_bet_id:
-                            await portfolio.close_bet(full_bet_id, current_price, close_reason)
-                            
-                            settlement_info = {
-                                'symbol': bet.symbol,
-                                'reason': close_reason,
-                                'entry_price': bet.entry_price,
-                                'exit_price': current_price,
-                                'amount': bet.amount,
-                                'return_pct': current_return_pct
-                            }
-                            settlements.append(settlement_info)
-                        else:
-                            self.logger.error(f"Could not find full bet ID for {bet.bet_id}")
-                        
-                        await portfolio.cleanup()
-                        
-                    except Exception as e:
-                        self.logger.error(f"Error settling position {bet.symbol}: {e}")
-            
-            # Report any settlements
+            from ..portfolio.manager import PortfolioManager
+            from ..trading.settlement import settle_positions
+
+            portfolio = PortfolioManager(self.config)
+            await portfolio.initialize()
+
+            try:
+                alive = await portfolio.get_alive_bets()
+                if not alive:
+                    return
+
+                self.logger.info(f"Monitoring {len(alive)} positions for settlement...")
+
+                prices = await self._get_current_prices(
+                    sorted({bet.symbol for bet in alive}))
+
+                # Reprice open positions before deciding, so equity and unrealised
+                # P&L reflect the same prices the decision used.
+                await portfolio.mark_to_market(prices)
+
+                max_hold_days = int(self.config.get('trading', {}).get('max_hold_days', 30))
+                settlements = await settle_positions(portfolio, prices, max_hold_days)
+            finally:
+                await portfolio.cleanup()
+
             if settlements:
-                print(f"\n{'='*80}")
+                print()
+                print(f"{'='*80}")
                 print(f"POSITIONS SETTLED ({len(settlements)})")
                 print(f"{'='*80}")
-                
-                for settlement in settlements:
-                    print(f"CLOSED: {settlement['symbol']}")
-                    print(f"  Reason: {settlement['reason']}")
-                    print(f"  Entry: ${settlement['entry_price']:.2f} -> Exit: ${settlement['exit_price']:.2f}")
-                    print(f"  Amount: ${settlement['amount']:.2f} | Return: {settlement['return_pct']:+.2f}%")
-                    
+                for record in settlements:
+                    entry, exit_price = record['entry_price'], record['exit_price']
+                    return_pct = ((exit_price - entry) / entry * 100) if entry else 0.0
+                    print(f"CLOSED: {record['symbol']}  [{record['exit_type']}]")
+                    print(f"  Reason: {record['reason']}")
+                    print(f"  Entry: ${entry:.4f} -> Exit: ${exit_price:.4f} "
+                          f"({return_pct:+.2f}%)")
                 print(f"{'='*80}")
-            else:
-                self.logger.debug("No positions required settlement at this time")
-                
+
         except Exception as e:
-            self.logger.error(f"Error in position monitoring: {e}")
-    
+            self.logger.error(f"Error during settlement: {e}", exc_info=True)
+
     async def _get_full_bet_id(self, short_bet_id: str) -> str:
         """Get the full bet ID from the short display ID"""
         conn = sqlite3.connect(self.db_path)

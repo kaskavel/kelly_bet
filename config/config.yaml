@@ -2,25 +2,101 @@
 
 # Trading Parameters
 trading:
+  # --- Barrier placement -----------------------------------------------------
+  # mode: "volatility" scales the barriers to each asset's own realised vol, so a
+  # bet on RIVN and a bet on EURGBP are comparable events that resolve on a similar
+  # clock. "fixed" uses win_threshold/loss_threshold below.
+  #
+  # Fixed +5%/-3% was measured to be the wrong shape for this universe: a 15-day
+  # time barrier left 46.8% of bets reaching neither level, and one forex position
+  # sat open 4.6 months because it could not plausibly travel 3%.
+  barrier:
+    mode: "volatility"     # volatility | fixed
+    win_sigma: 1.5         # win barrier at +1.5 * sigma_horizon
+    loss_sigma: 1.0        # loss barrier at -1.0 * sigma_horizon
+    horizon_days: 10       # sigma is scaled to this holding horizon
+    vol_lookback: 20       # trailing bars used to estimate daily vol
+    robust_sigma: true     # estimate sigma from the median absolute deviation, not the
+                           # standard deviation. The cache mixes adjusted with
+                           # unadjusted prices and so contains fake gaps (AVB shows a
+                           # false -61% bar; 126 such bars across 75 assets). One
+                           # outlier is enough to push a barrier to its 40% cap under
+                           # an SD estimate. Set false only on clean data.
+    max_barrier_pct: 40.0  # cap for very high-vol assets. There is deliberately no
+                           # floor: widening a quiet asset's barriers up to a minimum
+                           # would rescue exactly the assets the fee arithmetic should
+                           # exclude, and the barrier would no longer be 1.5 sigma.
+    # Reject a bet whose fee-adjusted break-even exceeds this. Geometry is 40.0%
+    # (= loss_sigma/(win_sigma+loss_sigma)), so 47% accepts needing at most 7 points
+    # of real edge. This is what filters out quiet assets: a 0.3%-daily-vol currency
+    # pair gets a ~1.4% win barrier where a 0.50% round trip pushes break-even past
+    # 60%, i.e. it would need 20+ points of edge.
+    max_break_even_pct: 47.0
+
+  # Used only when barrier.mode == "fixed".
   win_threshold: 5.0  # Profit target percentage
   loss_threshold: 3.0  # Stop loss percentage
-  kelly_fraction: 0.25  # Conservative Kelly multiplier 1/8
+  # Conservative Kelly multiplier. This looks tiny but is not: for a capped-loss bet
+  # the growth-optimal fraction is f* = p/l - q/w, which at p=0.60 on a 5%/3% bet is
+  # 8.25x capital. Quarter-Kelly would be 206% of capital. 0.005 yields ~1.6% of
+  # capital at p=0.50 rising to ~10% at p=0.88, so position size tracks edge instead
+  # of sitting pinned against max_bet_fraction.
+  kelly_fraction: 0.005
   max_concurrent_bets: 30
   initial_capital: 10000.0  # Starting capital
-  min_bet_amount: 100.0     # Minimum bet size
-  max_bet_amount: 10000.0   # Maximum bet size  
-  max_bet_fraction: 0.1     # Maximum 5% of capital per bet
-  min_probability: 55.0     # Minimum 55% probability to bet
-  max_loss_percentage: 5.0  # Maximum 5% loss threshold
-  top_n_display: 10  # Number of top assets to show in manual mode
-  trading_fee_percentage: 0.25  # Trading fees (0.25% per transaction)
-  
+  min_bet_amount: 100.0     # Below this, skip the bet entirely (NOT a floor that raises size)
+  max_bet_amount: 10000.0   # Maximum bet size
+  max_bet_fraction: 0.1     # Maximum 10% of capital per bet
+  max_risk_fraction: 0.0035 # Backstop: max capital at risk per bet (bet_fraction * net loss).
+                            # 0.35% / 3.5% net loss = a 10% position, matching
+                            # max_bet_fraction, so this binds only if either is retuned.
+  min_probability: 66.0     # Minimum probability to bet. NOTE: this is an UNCALIBRATED
+                            # ensemble score, not a probability. Empirically only the 66%+
+                            # band has been profitable (+2.35% on turnover vs -2.73% for
+                            # the 50-58% band). Re-derive from a reliability curve once
+                            # scripts/backtest.py has been run.
+  max_loss_percentage: 5.0  # Warn if loss threshold exceeds this
+  # Time barrier: force-close at market after this many days.
+  #
+  # Must be long enough not to TRUNCATE the win barrier. The win barrier sits
+  # 1.5 sigma out and the stop 1.0 sigma, so expected time-to-touch is ~2.25x longer
+  # for a win: with horizon_days=10 that is ~(1.5*sqrt(10))^2 = 23 bars vs ~10 for
+  # the stop. Too short a limit therefore cuts off wins preferentially and depresses
+  # the win rate below the barrier geometry. Measured:
+  #
+  #   max_hold   timeouts   win rate    (geometry approx 40%)
+  #     30d        20.5%      28.2%
+  #     60d         5.4%      33.0%
+  #     90d         1.5%      35.8%
+  #
+  # 60 is the compromise: truncation is largely gone without tying capital up for a
+  # quarter per bet. Retune if win_sigma or horizon_days changes.
+  max_hold_days: 60
+  top_n_display: 10  # Number of proposals to shortlist
+  # Ceiling on the rake for a proposal: 2c/(w+l) in percentage points, i.e. how much
+  # forecasting skill the bet demands over pure luck. 3.0 admits the "Low" and
+  # "Moderate" bands. Above ~3 points a bet asks for better forecasting than
+  # professional systematic funds deliver, so proposing it is not honest.
+  max_proposal_edge_pct: 3.0
+  trading_fee_percentage: 0.25  # Trading fee per side. Round trip = 0.50%.
+                                # This moves break-even from 37.5% to 43.75% on a 5/3 bet.
+
 # Risk Management
 risk:
   max_drawdown: 20.0  # Maximum portfolio drawdown percentage
   loss_streak_limit: 5  # Consecutive losses before pause
   min_capital: 1000.0  # Minimum capital to continue trading
-  
+  daily_loss_limit: 5.0    # Emergency stop if capital drops this % in 24h
+  weekly_loss_limit: 10.0  # Pause at 80% of this weekly loss
+  max_exposure: 50.0       # Maximum % of capital deployed in open bets
+  # Assumed average pairwise correlation between concurrent positions. Kelly sizes a
+  # bet as if it were the only thing at risk; with 30 correlated longs that
+  # over-levers the book by roughly this factor. Each position is scaled by
+  # 1/(1+(n-1)*rho), so at rho=0.30 ten open bets size at 27% of standalone Kelly.
+  # 0.30 is a reasonable default for a long-only equity book; raise it if the
+  # universe is concentrated in one sector.
+  assumed_correlation: 0.30
+
 # System Settings
 system:
   polling_interval: 1800  # 30 minutes in seconds
@@ -93,24 +169,23 @@ prediction:
       n_estimators: 100
       max_depth: 10
       min_samples_split: 10
-      target_return: 0.05  # 5% target return for training
     lstm:  # LSTM Neural Network
-      sequence_length: 60    # 60 time steps for LSTM input
+      sequence_length: 30    # 30 daily bars of context (60 needed 90 bars of history,
+                             # which excluded a large part of the universe)
       lstm_units: 50         # Number of LSTM units
       dropout_rate: 0.2      # Dropout for regularization
       epochs: 50             # Training epochs
       batch_size: 32         # Batch size for training
-      target_return: 0.03    # 3% target return for training
-    regression:  # Linear Regression Models
-      model_type: "ridge"    # linear, ridge, lasso
-      alpha: 1.0             # Regularization strength
-      target_return: 0.03    # 3% target return for training
-      prediction_horizon: 5  # Predict 5 periods ahead
+    regression:  # Penalised logistic regression on the barrier label
+      penalty: "l2"          # l1 or l2
+      alpha: 1.0             # Regularization strength (C = 1/alpha)
     svm:  # Support Vector Machine
       kernel: "rbf"          # rbf, linear, poly
-      C: 10.0                # Regularization parameter (higher = less conservative)
+      C: 10.0                # Regularization parameter
       gamma: "scale"         # Kernel coefficient
-      target_return: 0.03    # 3% target return for training
+      max_training_rows: 8000   # SVC is O(n^2)-ish in samples and dominates run time
+                                # on a wide universe; 8k keeps a 250-asset walk-forward
+                                # tractable. Raise it for a final fit, not for sweeps.
 
   # Ensemble settings
   ensemble:
