@@ -314,6 +314,16 @@ class PortfolioManager:
         currency = prediction.get('currency', 'USD')  # Original currency for reference
         algorithms = prediction.get('algorithms', [])
 
+        # A missing or zero price must fail here, with a message that names the cause.
+        # It previously reached `shares = net_bet_amount / current_price` and surfaced
+        # as a bare "float division by zero", which says nothing about what went wrong.
+        if not current_price or current_price <= 0:
+            raise ValueError(
+                f"{symbol}: refusing to place a bet at a price of {current_price}. "
+                f"The opportunity carries no usable price, so position size and both "
+                f"barrier levels would be meaningless."
+            )
+
         self.logger.info(f"Placing bet for {symbol} at ${current_price:.2f} USD "
                         f"(original currency: {currency}) with {probability:.1f}% probability")
         

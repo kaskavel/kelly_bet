@@ -589,7 +589,10 @@ class AssetSelector:
                 'symbol': symbol,
                 'type': 'stock',
                 'exchange': 'LSE',
-                'currency': 'GBP',
+                # GBX, not GBP: the LSE feed quotes in pence, so a raw 8,418 for
+                # CRH.L means GBP 84.18. Labelling it GBP overstated every UK price
+                # by 100x.
+                'currency': 'GBX',
                 'country': 'UK'
             })
 

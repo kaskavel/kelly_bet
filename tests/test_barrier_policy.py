@@ -421,3 +421,63 @@ class LabellingIntegrationTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class MinorUnitCurrencyTestCase(unittest.TestCase):
+    """
+    The London Stock Exchange quotes in PENCE, not pounds.
+
+    CRH.L trades at 8,418 meaning GBp 8,418 = GBP 84.18. Treating that as pounds
+    reported the price as $11,402 instead of $114.02 -- a 100x error across all 73
+    `.L` assets in this universe.
+    """
+
+    def setUp(self):
+        import pandas as pd
+        from src.utils.currency_converter import CurrencyConverter
+        self.converter = CurrencyConverter()
+        self.converter.update_rates({
+            'GBPUSD=X': pd.DataFrame({'Close': [1.3545]}),
+            'USDJPY=X': pd.DataFrame({'Close': [153.5]}),
+        })
+
+    def test_lse_symbols_are_priced_in_pence(self):
+        self.assertEqual(self.converter.currency_for_symbol('CRH.L'), 'GBX')
+        self.assertEqual(self.converter.currency_for_symbol('LLOY.L'), 'GBX')
+
+    def test_gbx_is_one_hundredth_of_gbp(self):
+        self.assertAlmostEqual(self.converter.get_rate('GBX'),
+                               self.converter.get_rate('GBP') / 100.0, places=12)
+
+    def test_real_lse_prices_convert_plausibly(self):
+        """Actual cached closes must land in a believable share-price range."""
+        for raw, symbol in ((8418.00, 'CRH.L'), (11650.00, 'AZN.L'),
+                            (557.10, 'BP.L'), (151.25, 'CNA.L')):
+            usd = self.converter.convert_to_usd(
+                raw, self.converter.currency_for_symbol(symbol))
+            self.assertLess(usd, 500.0, f"{symbol} converted to an implausible ${usd:,.2f}")
+            self.assertGreater(usd, 0.5)
+
+    def test_crh_converts_to_the_expected_figure(self):
+        usd = self.converter.convert_to_usd(8418.00, 'GBX')
+        self.assertAlmostEqual(usd, 114.02, delta=0.05)
+
+    def test_non_lse_currencies_are_unaffected(self):
+        self.assertEqual(self.converter.currency_for_symbol('8053.T'), 'JPY')
+        self.assertAlmostEqual(self.converter.convert_to_usd(1840.0, 'JPY'),
+                               1840.0 / 153.5, places=6)
+        self.assertEqual(self.converter.currency_for_symbol('AAPL'), 'USD')
+        self.assertEqual(self.converter.convert_to_usd(315.34, 'USD'), 315.34)
+
+    def test_asset_selector_labels_uk_stocks_in_pence(self):
+        """The metadata source must agree with the feed's units."""
+        import asyncio
+        import yaml
+        from src.utils.asset_selector import AssetSelector
+
+        config = yaml.safe_load(open('config/config.yaml'))
+        assets = asyncio.run(AssetSelector(config).get_all_assets())
+        uk = [a for a in assets if a['symbol'].endswith('.L')]
+        self.assertGreater(len(uk), 20)
+        self.assertTrue(all(a['currency'] == 'GBX' for a in uk),
+                        "UK listings must be labelled GBX, not GBP")

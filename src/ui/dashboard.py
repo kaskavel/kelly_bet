@@ -1234,6 +1234,34 @@ class TradingDashboard:
             self.logger.error(f"Could not rebuild cached opportunities: {e}")
             return []
 
+    def _cached_forex_bars(self) -> Dict:
+        """
+        Forex bars from the local cache, for offline USD conversion.
+
+        Lets the page-load path normalise foreign quotes without a network call.
+        """
+        from src.utils.currency_converter import CurrencyConverter
+
+        bars = {}
+        conn = sqlite3.connect(self.portfolio_manager.db_path)
+        try:
+            for pair in set(CurrencyConverter.CURRENCY_PAIRS.values()):
+                if not pair.endswith('=X'):
+                    continue
+                frame = pd.read_sql_query("""
+                    SELECT p.close AS Close FROM price_data p
+                    JOIN assets a ON a.asset_id = p.asset_id
+                    WHERE a.symbol = ? ORDER BY p.timestamp DESC LIMIT 5
+                """, conn, params=(pair,))
+                if not frame.empty:
+                    bars[pair] = frame.iloc[::-1]
+        except Exception as e:
+            self.logger.debug(f"Could not read cached forex bars: {e}")
+        finally:
+            conn.close()
+
+        return bars
+
     async def _annotate_opportunity_economics(self, opportunities: List[Dict]):
         """
         Attach the exactly-knowable economics to each opportunity.
@@ -1248,8 +1276,17 @@ class TradingDashboard:
 
         from src.kelly.calculator import KellyCalculator
         from src.trading.barriers import BarrierPolicy
+        from src.utils.currency_converter import CurrencyConverter, MissingRateError
         policy = BarrierPolicy(self.config)
         kelly = KellyCalculator(self.config)
+
+        # price_data stores NATIVE currency -- it is the raw market-data cache, and
+        # normalisation to USD happens on read. Reading it raw here showed a Tokyo
+        # listing's JPY 1,840 as "$1,840", which is the same class of error that once
+        # recorded a bet at $31.67 against a JPY 4,899 quote. Build the converter from
+        # cached forex bars so this stays an offline path.
+        converter = CurrencyConverter()
+        converter.update_rates(self._cached_forex_bars())
 
         # Sizing context: real cash and the real open-position count, so the
         # correlation haircut is the one that would actually apply.
@@ -1277,7 +1314,28 @@ class TradingDashboard:
                         'open': 'Open', 'high': 'High', 'low': 'Low',
                         'close': 'Close', 'volume': 'Volume'})
 
-                    opp.setdefault('current_price', float(frame['Close'].iloc[-1]))
+                    # Convert to USD before anything reads a price. Barrier
+                    # percentages are currency-invariant, but the price, the share
+                    # count and the stored entry price are not.
+                    currency = converter.currency_for_symbol(opp['symbol'])
+                    if currency != 'USD':
+                        try:
+                            frame = converter.convert_price_series(frame, currency)
+                        except MissingRateError as e:
+                            self.logger.warning(
+                                f"Dropping {opp['symbol']} from the cached list: {e}")
+                            opp['current_price'] = 0.0
+                            opp['tradeable'] = False
+                            opp['reject_reason'] = f"no {currency}/USD rate cached"
+                            continue
+                    opp['currency'] = currency
+
+                    # Assign, do NOT setdefault: the dict is created with a
+                    # 'current_price': 0.0 placeholder so it carries the same keys as
+                    # the live path, and setdefault therefore left it at zero. Kelly
+                    # does not divide by price so it reported a plausible size, and
+                    # the failure only surfaced later as `shares = amount / 0`.
+                    opp['current_price'] = float(frame['Close'].iloc[-1])
 
                     spec = policy.for_series(frame)
                     if spec is None:

@@ -40,6 +40,13 @@ class CurrencyConverter:
     # Inverted pairs (quoted as USD/XXX, so the XXX->USD rate is 1/rate)
     INVERTED_PAIRS = {'JPY', 'CHF', 'CNY', 'CAD', 'HKD'}
 
+    # Minor units. The London Stock Exchange quotes most listings in PENCE, not
+    # pounds -- CRH.L trades at 8,418, meaning GBp 8,418 = 84.18 GBP. Treating that
+    # figure as pounds overstates the price by 100x, which affected all 73 `.L`
+    # assets in this universe. GBX is therefore a currency in its own right here,
+    # worth one hundredth of GBP.
+    MINOR_UNITS = {'GBX': ('GBP', 100.0), 'ZAC': ('ZAR', 100.0), 'ILA': ('ILS', 100.0)}
+
     # Fallback rates (units of currency per USD) used when no forex bar is available.
     # HKD is pegged inside a 7.75-7.85 band.
     PEGGED_RATES = {'HKD': 7.80}
@@ -75,6 +82,13 @@ class CurrencyConverter:
                 if rate is not None and rate > 0:
                     self.exchange_rates[currency] = rate
                     logger.debug(f"Updated {currency}/USD rate: {rate:.6f}")
+
+            # Derive minor-unit rates from their major currency, so GBX is available
+            # wherever GBP is.
+            for minor, (major, divisor) in self.MINOR_UNITS.items():
+                major_rate = self.exchange_rates.get(major)
+                if major_rate:
+                    self.exchange_rates[minor] = major_rate / divisor
 
             self.last_update = datetime.now()
             logger.info(f"Updated {len(self.exchange_rates)} currency exchange rates")
@@ -137,7 +151,9 @@ class CurrencyConverter:
         suffix_map = {
             '.T': 'JPY', '.HK': 'HKD', '.SS': 'CNY', '.SZ': 'CNY',
             '.DE': 'EUR', '.PA': 'EUR', '.AS': 'EUR', '.MI': 'EUR', '.MC': 'EUR',
-            '.L': 'GBP', '.SW': 'CHF', '.AX': 'AUD', '.TO': 'CAD', '.NZ': 'NZD',
+            # LSE quotes in pence, not pounds -- see MINOR_UNITS.
+            '.L': 'GBX',
+            '.SW': 'CHF', '.AX': 'AUD', '.TO': 'CAD', '.NZ': 'NZD',
         }
         for suffix, currency in suffix_map.items():
             if symbol.endswith(suffix):
